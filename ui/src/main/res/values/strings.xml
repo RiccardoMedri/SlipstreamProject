@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Slipstream</string>
+    <string name="splash_image_desc">Slipstream Splah Page Image</string>
 </resources>

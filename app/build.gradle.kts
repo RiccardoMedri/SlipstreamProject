@@ -8,7 +8,7 @@ android {
     compileSdk = 36
 
     buildFeatures {
-        viewBinding=true
+            viewBinding=true
     }
 
     defaultConfig {
