@@ -45,7 +45,7 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation(project(path = ":domain"))
-    implementation("org.jellyfin.sdk:jellyfin-core:1.7.0-beta.6")
+    implementation("org.jellyfin.sdk:jellyfin-core:1.6.8")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

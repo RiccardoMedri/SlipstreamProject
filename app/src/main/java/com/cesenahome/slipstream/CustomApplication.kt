@@ -1,17 +1,12 @@
 package com.cesenahome.slipstream
 
 import android.app.Application
-import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.cesenahome.data.di.RepositoryProviderImpl
+import com.cesenahome.domain.di.UseCaseProvider
 
 class CustomApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
-        //Add UseCaseProvider Instance
-
+        UseCaseProvider.setup(RepositoryProviderImpl(context = this.applicationContext))
     }
 }

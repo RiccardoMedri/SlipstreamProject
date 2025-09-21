@@ -3,6 +3,12 @@
 
     <application>
         <activity
+            android:name=".homepage.HomepageActivity"
+            android:exported="false" />
+        <activity
+            android:name=".login.LoginActivity"
+            android:exported="false"></activity>
+        <activity
             android:name=".splash.SplashActivity"
             android:exported="true">
             <intent-filter>

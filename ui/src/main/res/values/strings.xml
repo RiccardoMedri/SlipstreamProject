@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Slipstream</string>
     <string name="splash_image_desc">Slipstream Splah Page Image</string>
+    <string name="server_url_hint">Server URL (e.g., http://localhost:8096)</string>
+    <string name="username_hint">Username</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button_text">Login</string>
 </resources>
