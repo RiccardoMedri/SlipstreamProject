@@ -12,9 +12,7 @@ interface LoginRepository {
 
     suspend fun logout()
 
-
     suspend fun restoreSession(): LoginResult
-
 
     fun isLoggedIn(): Flow<Boolean>
 

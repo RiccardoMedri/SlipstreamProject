@@ -1,6 +1,7 @@
 package com.cesenahome.data.remote
 
 import android.content.Context
+import com.cesenahome.domain.models.Song
 import com.cesenahome.domain.models.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,9 +9,13 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
+import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
+import org.jellyfin.sdk.model.UUID
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.SortOrder
 
 class JellyfinApiClient(
     appContext: Context,
@@ -18,44 +23,44 @@ class JellyfinApiClient(
     clientVersion: String = "0.1.0"
 ) {
     private val jellyfin: Jellyfin = createJellyfin {
-        context = appContext // required on Android
+        context = appContext
         clientInfo = ClientInfo(name = clientName, version = clientVersion)
     }
 
     @Volatile
     private var api: ApiClient? = null
 
+    @Volatile
+    private var currentUserId: UUID? = null
+
     fun initializeOrUpdateClient(serverUrl: String) {
         val base = normalizeServerUrl(serverUrl)
-        api = jellyfin.createApi(baseUrl = base) // you can also pass a saved accessToken here
+        api = jellyfin.createApi(baseUrl = base)
     }
 
     suspend fun login(username: String, password: String): Result<User> = withContext(Dispatchers.IO) {
         val apiClient = api ?: return@withContext Result.failure(
             IllegalStateException("ApiClient not initialized. Call initializeOrUpdateClient() first.")
         )
-
         try {
-            // Perform the request; the 'by' delegate executes the call and either returns
-            // the AuthenticationResult or throws InvalidStatusException on non-2xx.
             val auth by apiClient.userApi.authenticateUserByName(
                 username = username,
-                password = password // empty string allowed for passwordless users
+                password = password
             )
 
-            // Store token on the ApiClient so subsequent calls are authenticated
             apiClient.update(accessToken = auth.accessToken)
 
+            currentUserId = auth.user?.id
+
+            val uidString = auth.user?.id?.toString().orEmpty()
+
             val user = User(
-                userId = auth.user?.id.toString() ?: "",           // prefer non-null id from server
+                userId = uidString,
                 name = auth.user?.name,
                 serverUrl = apiClient.baseUrl.toString()
             )
-
             Result.success(user)
-
         } catch (e: InvalidStatusException) {
-            // 401 is invalid credentials; other codes bubble up here too
             val message = if (e.status == 401) "Invalid username or password." else "Login failed: HTTP ${e.status}"
             Result.failure(Exception(message, e))
         } catch (t: Throwable) {
@@ -63,11 +68,60 @@ class JellyfinApiClient(
         }
     }
 
+    private suspend fun getCountForKinds(vararg kinds: BaseItemKind): Int = withContext(Dispatchers.IO) {
+        val apiClient = api ?: error("ApiClient not initialized")
+        val response by apiClient.itemsApi.getItems(
+            userId = getCurrentUserId(),   // now UUID?
+            recursive = true,
+            includeItemTypes = kinds.toList(),
+            startIndex = 0,
+            limit = 0
+        )
+        response.totalRecordCount ?: response.items.size
+    }
+
+    suspend fun getSongs(): Result<List<Song>> = withContext(Dispatchers.IO) {
+        val apiClient = api ?: return@withContext Result.failure(
+            IllegalStateException("ApiClient not initialized. Call initializeOrUpdateClient() first.")
+        )
+        try {
+            val response by apiClient.itemsApi.getItems(
+                userId = getCurrentUserId(),
+                recursive = true,
+                includeItemTypes = listOf(BaseItemKind.AUDIO),
+                sortBy = listOf("SortName"),
+                sortOrder = listOf(SortOrder.ASCENDING)
+            )
+            val songs = response.items.map {
+                Song(
+                    id = it.id.toString(),
+                    title = it.name.orEmpty(),
+                    artist = it.artists?.firstOrNull()?.name,
+                    album = it.album,
+                    duration = it.runTimeTicks
+                )
+            }
+            Result.success(songs)
+        } catch (t: Throwable) {
+            Result.failure(Exception("Failed to get songs: ${t.message}", t))
+        }
+    }
+
+    fun getCurrentUserId(): UUID? = currentUserId
+
+    fun setCurrentUserIdFromString(id: String?) {
+        currentUserId = id?.takeIf { it.isNotBlank() }?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+    }
+
+    suspend fun getArtistsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ARTIST)
+    suspend fun getAlbumsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ALBUM)
+    suspend fun getPlaylistsCount(): Int = getCountForKinds(BaseItemKind.PLAYLIST)
+    suspend fun getSongsCount(): Int = getCountForKinds(BaseItemKind.AUDIO)
+
     fun currentApi(): ApiClient? = api
 
     fun clearSession() {
         api?.update(accessToken = null)
-        // optionally: api = null // if you want to force re-init base URL after logout
     }
 
     private fun normalizeServerUrl(input: String): String {

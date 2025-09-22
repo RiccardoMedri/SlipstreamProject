@@ -10,6 +10,8 @@ object UseCaseProvider {
     lateinit var isLoggedInUseCase: IsLoggedInUseCase
     lateinit var logoutUseCase: LogoutUseCase
     lateinit var restoreSessionUseCase: RestoreSessionUseCase
+    lateinit var getHomepageMenuUseCase: GetHomepageMenuUseCase
+    lateinit var getLibraryCountsUseCase: GetLibraryCountsUseCase
 
 
     fun setup(repositoryProvider: RepositoryProvider) {
@@ -18,5 +20,7 @@ object UseCaseProvider {
         isLoggedInUseCase = IsLoggedInUseCaseImpl(repositoryProvider.loginRepository)
         logoutUseCase = LogoutUseCaseImpl(repositoryProvider.loginRepository)
         restoreSessionUseCase = RestoreSessionUseCaseImpl(repositoryProvider.loginRepository)
+        getHomepageMenuUseCase = GetHomepageMenuUseCaseImpl(repositoryProvider.homeRepository)
+        getLibraryCountsUseCase = GetLibraryCountsUseCaseImpl(repositoryProvider.homeRepository)
     }
 }

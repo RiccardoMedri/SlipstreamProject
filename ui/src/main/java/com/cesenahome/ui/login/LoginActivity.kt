@@ -77,7 +77,7 @@ class LoginActivity : AppCompatActivity() {
                             val intent = Intent(this@LoginActivity, HomepageActivity::class.java)
                             startActivity(intent)
                             finish()
-                        }, 3000)
+                        }, 300)
                     } else if (state.error != null) {
                         binding.tvStatus.text = state.error
                         binding.tvStatus.visibility = View.VISIBLE

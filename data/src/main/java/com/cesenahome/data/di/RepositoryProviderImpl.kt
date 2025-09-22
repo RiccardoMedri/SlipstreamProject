@@ -2,7 +2,9 @@ package com.cesenahome.data.di
 
 import android.content.Context
 import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.repository.HomepageRepositoryImpl
 import com.cesenahome.data.repository.LoginRepositoryImpl
+import com.cesenahome.domain.repository.HomepageRepository
 import com.cesenahome.data.session.SessionDataStore
 import com.cesenahome.domain.di.RepositoryProvider
 import com.cesenahome.domain.repository.LoginRepository
@@ -24,6 +26,10 @@ class RepositoryProviderImpl(
             sessionStore = sessionStore)
     }
 
-    //TODO instantiate other repositories here
+    override val homeRepository: HomepageRepository by lazy {
+        HomepageRepositoryImpl(
+            jellyfinApiClient = jellyfinApiClient
+        )
+    }
 
 }
