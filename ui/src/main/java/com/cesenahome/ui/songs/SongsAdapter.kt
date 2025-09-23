@@ -7,10 +7,12 @@ import androidx.paging.PagingDataAdapter
 import com.cesenahome.domain.models.Song
 import com.cesenahome.ui.databinding.ItemSongBinding
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import java.util.concurrent.TimeUnit
 
-class SongsAdapter :
-    PagingDataAdapter<Song, SongsAdapter.VH>(DIFF) {
+class SongsAdapter(
+    private val onSongClick: ((Song) -> Unit)? = null
+): PagingDataAdapter<Song, SongsAdapter.VH>(DIFF) {
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<Song>() {
@@ -31,6 +33,14 @@ class SongsAdapter :
         holder.binding.title.text = item.title
         holder.binding.subtitle.text = listOfNotNull(item.artist, item.album).joinToString(" — ").ifBlank { "Unknown" }
         holder.binding.trailing.text = item.durationMs?.let { formatDuration(it) } ?: ""
+        Glide.with(holder.binding.cover)
+            .load(item.artworkUrl)
+            .centerCrop()
+            .into(holder.binding.cover)
+
+        holder.itemView.setOnClickListener {
+            onSongClick?.invoke(item)
+        }
     }
 
     private fun formatDuration(ms: Long): String {

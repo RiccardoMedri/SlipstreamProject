@@ -87,10 +87,14 @@ class JellyfinApiClient(
         currentUserId = id?.takeIf { it.isNotBlank() }?.let { runCatching { UUID.fromString(it) }.getOrNull() }
     }
 
+    fun currentApi(): ApiClient? = api
     suspend fun getArtistsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ARTIST)
     suspend fun getAlbumsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ALBUM)
     suspend fun getPlaylistsCount(): Int = getCountForKinds(BaseItemKind.PLAYLIST)
     suspend fun getSongsCount(): Int = getCountForKinds(BaseItemKind.AUDIO)
+    fun baseUrl(): String = api?.baseUrl?.toString().orEmpty()
+    fun accessToken(): String? = api?.accessToken
+    fun currentUserIdString(): String? = currentUserId?.toString()
 
     suspend fun fetchSongsAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val apiClient = currentApi() ?: error("ApiClient not initialized")
@@ -106,7 +110,20 @@ class JellyfinApiClient(
         response.items
     }
 
-    fun currentApi(): ApiClient? = api
+    fun buildImageUrl(itemId: String, imageTag: String?, maxSize: Int = 256): String? {
+        val base = baseUrl().takeIf { it.isNotBlank() } ?: return null
+        val token = accessToken() ?: return null
+        val tagParam = imageTag?.let { "&tag=$it" }.orEmpty()
+        return "${base}Items/$itemId/Images/Primary?quality=90&maxWidth=$maxSize$tagParam&api_key=$token"
+    }
+
+    fun buildAudioStreamUrl(itemId: String): String? {
+        val base = baseUrl().takeIf { it.isNotBlank() } ?: return null
+        val token = accessToken() ?: return null
+        val user = currentUserIdString() ?: return null
+        // Universal endpoint picks a suitable container/codec automatically.
+        return "${base}Audio/$itemId/universal?UserId=$user&api_key=$token"
+    }
 
     fun clearSession() {
         api?.update(accessToken = null)

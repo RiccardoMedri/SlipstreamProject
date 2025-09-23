@@ -26,15 +26,4 @@ class SongsRepositoryImpl(
             pagingSourceFactory = { SongsPagingSource(jellyfinApiClient, pageSize) }
         ).flow
     }
-
-    private fun BaseItemDto.toDomain(): Song {
-        val ticks = runTimeTicks // 1 tick = 100ns; 10_000 ticks = 1 ms
-        return Song(
-            id = id?.toString().orEmpty(),
-            title = name.orEmpty(),
-            album = album,
-            artist = artists?.firstOrNull(),
-            durationMs = ticks?.let { it / 10_000L }
-        )
-    }
 }

@@ -5,6 +5,7 @@ import androidx.paging.PagingState
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.domain.models.Song
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.ImageType
 
 class SongsPagingSource(
     private val api: JellyfinApiClient,
@@ -43,15 +44,20 @@ class SongsPagingSource(
         return page.prevKey?.plus(pageSize) ?: page.nextKey?.minus(pageSize)
     }
 
-    // Local mapper (same as before)
     private fun BaseItemDto.toDomain(): Song {
         val ticks = runTimeTicks // 100ns per tick
+        val idStr = id?.toString().orEmpty()
+
+        // Try both properties (Jellyfin DTOs expose one or both)
+        val primaryTag = imageTags?.get(ImageType.PRIMARY) ?: albumPrimaryImageTag
+
         return Song(
-            id = id?.toString().orEmpty(),
+            id = idStr,
             title = name.orEmpty(),
             album = album,
             artist = artists?.firstOrNull(),
-            durationMs = ticks?.let { it / 10_000L }
+            durationMs = ticks?.let { it / 10_000L },
+            artworkUrl = api.buildImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 256)
         )
     }
 }
