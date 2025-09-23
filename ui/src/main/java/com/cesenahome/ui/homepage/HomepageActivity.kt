@@ -1,5 +1,6 @@
 package com.cesenahome.ui.homepage
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -10,6 +11,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.ui.databinding.ActivityHomepageBinding
 import com.cesenahome.domain.models.HomeDestination
+import com.cesenahome.ui.songs.SongsActivity
 import kotlinx.coroutines.launch
 
 class HomepageActivity : AppCompatActivity() {
@@ -73,14 +75,11 @@ class HomepageActivity : AppCompatActivity() {
     }
 
     private fun onDestination(dest: HomeDestination) {
-        // TODO: Replace Toasts with navigation to your list Activities.
-        // e.g., startActivity(Intent(this, ArtistsListActivity::class.java))
-        val msg = when (dest) {
-            HomeDestination.ARTISTS   -> "Go to Artists"
-            HomeDestination.ALBUMS    -> "Go to Albums"
-            HomeDestination.PLAYLISTS -> "Go to Playlists"
-            HomeDestination.SONGS     -> "Go to Songs"
+        when (dest) {
+            HomeDestination.ARTISTS   -> { /* TODO */ }
+            HomeDestination.ALBUMS    -> { /* TODO */ }
+            HomeDestination.PLAYLISTS -> { /* TODO */ }
+            HomeDestination.SONGS     -> startActivity(Intent(this, SongsActivity::class.java))
         }
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }

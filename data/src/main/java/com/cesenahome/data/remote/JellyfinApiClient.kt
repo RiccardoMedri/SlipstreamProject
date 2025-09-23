@@ -1,7 +1,6 @@
 package com.cesenahome.data.remote
 
 import android.content.Context
-import com.cesenahome.domain.models.Song
 import com.cesenahome.domain.models.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,12 +8,14 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
-import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.UUID
-import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 
 class JellyfinApiClient(
@@ -80,33 +81,6 @@ class JellyfinApiClient(
         response.totalRecordCount ?: response.items.size
     }
 
-    suspend fun getSongs(): Result<List<Song>> = withContext(Dispatchers.IO) {
-        val apiClient = api ?: return@withContext Result.failure(
-            IllegalStateException("ApiClient not initialized. Call initializeOrUpdateClient() first.")
-        )
-        try {
-            val response by apiClient.itemsApi.getItems(
-                userId = getCurrentUserId(),
-                recursive = true,
-                includeItemTypes = listOf(BaseItemKind.AUDIO),
-                sortBy = listOf("SortName"),
-                sortOrder = listOf(SortOrder.ASCENDING)
-            )
-            val songs = response.items.map {
-                Song(
-                    id = it.id.toString(),
-                    title = it.name.orEmpty(),
-                    artist = it.artists?.firstOrNull()?.name,
-                    album = it.album,
-                    duration = it.runTimeTicks
-                )
-            }
-            Result.success(songs)
-        } catch (t: Throwable) {
-            Result.failure(Exception("Failed to get songs: ${t.message}", t))
-        }
-    }
-
     fun getCurrentUserId(): UUID? = currentUserId
 
     fun setCurrentUserIdFromString(id: String?) {
@@ -117,6 +91,20 @@ class JellyfinApiClient(
     suspend fun getAlbumsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ALBUM)
     suspend fun getPlaylistsCount(): Int = getCountForKinds(BaseItemKind.PLAYLIST)
     suspend fun getSongsCount(): Int = getCountForKinds(BaseItemKind.AUDIO)
+
+    suspend fun fetchSongsAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val apiClient = currentApi() ?: error("ApiClient not initialized")
+        val response by apiClient.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.AUDIO),
+            sortBy = listOf(ItemSortBy.SORT_NAME),
+            sortOrder = listOf(SortOrder.ASCENDING),
+            startIndex = startIndex,
+            limit = limit
+        )
+        response.items
+    }
 
     fun currentApi(): ApiClient? = api
 

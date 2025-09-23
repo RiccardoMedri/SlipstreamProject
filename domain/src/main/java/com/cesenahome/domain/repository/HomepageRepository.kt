@@ -2,6 +2,7 @@ package com.cesenahome.domain.repository
 
 import com.cesenahome.domain.models.HomeMenuItem
 import com.cesenahome.domain.models.LibraryCounts
+import com.cesenahome.domain.models.Song
 
 interface HomepageRepository {
     /**

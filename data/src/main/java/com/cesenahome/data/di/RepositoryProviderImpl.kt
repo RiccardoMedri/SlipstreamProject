@@ -8,6 +8,8 @@ import com.cesenahome.domain.repository.HomepageRepository
 import com.cesenahome.data.session.SessionDataStore
 import com.cesenahome.domain.di.RepositoryProvider
 import com.cesenahome.domain.repository.LoginRepository
+import com.cesenahome.domain.repository.SongsRepository
+import com.cesenahome.data.repository.SongsRepositoryImpl
 
 class RepositoryProviderImpl(
     private val context: Context
@@ -28,6 +30,12 @@ class RepositoryProviderImpl(
 
     override val homeRepository: HomepageRepository by lazy {
         HomepageRepositoryImpl(
+            jellyfinApiClient = jellyfinApiClient
+        )
+    }
+
+    override val songsRepository: SongsRepository by lazy {
+        SongsRepositoryImpl(
             jellyfinApiClient = jellyfinApiClient
         )
     }
