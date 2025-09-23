@@ -50,4 +50,5 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.4")
     implementation("com.github.bumptech.glide:glide:5.0.4")
     implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
 }

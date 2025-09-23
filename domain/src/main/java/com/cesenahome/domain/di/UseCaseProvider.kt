@@ -12,7 +12,7 @@ object UseCaseProvider {
     lateinit var restoreSessionUseCase: RestoreSessionUseCase
     lateinit var getHomepageMenuUseCase: GetHomepageMenuUseCase
     lateinit var getLibraryCountsUseCase: GetLibraryCountsUseCase
-    lateinit var getAllSongsUseCase: GetAllSongsUseCase
+    lateinit var getPagedSongsUseCase: GetPagedSongsUseCase
 
 
     fun setup(repositoryProvider: RepositoryProvider) {
@@ -23,6 +23,6 @@ object UseCaseProvider {
         restoreSessionUseCase = RestoreSessionUseCaseImpl(repositoryProvider.loginRepository)
         getHomepageMenuUseCase = GetHomepageMenuUseCaseImpl(repositoryProvider.homeRepository)
         getLibraryCountsUseCase = GetLibraryCountsUseCaseImpl(repositoryProvider.homeRepository)
-        getAllSongsUseCase = GetAllSongsUseCaseImpl(repositoryProvider.songsRepository)
+        getPagedSongsUseCase = GetPagedSongsUseCaseImpl(repositoryProvider.songsRepository)
     }
 }

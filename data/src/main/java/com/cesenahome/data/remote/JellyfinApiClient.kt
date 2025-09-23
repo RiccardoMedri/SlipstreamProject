@@ -98,7 +98,7 @@ class JellyfinApiClient(
             userId = getCurrentUserId(),
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.AUDIO),
-            sortBy = listOf(ItemSortBy.SORT_NAME),
+            sortBy = listOf(ItemSortBy.NAME),
             sortOrder = listOf(SortOrder.ASCENDING),
             startIndex = startIndex,
             limit = limit

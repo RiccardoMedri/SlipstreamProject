@@ -1,24 +1,26 @@
 package com.cesenahome.ui.songs
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.core.view.isVisible
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.ui.databinding.ActivitySongsBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.paging.LoadState
 
 class SongsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySongsBinding
     private val adapter = SongsAdapter()
-
     private val viewModel: SongsViewModel by lazy {
-        SongsViewModel(UseCaseProvider.getAllSongsUseCase)
+        SongsViewModel(UseCaseProvider.getPagedSongsUseCase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,21 +39,29 @@ class SongsActivity : AppCompatActivity() {
             DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
         )
         binding.toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
+        adapter.addLoadStateListener { loadStates ->
+            val refresh = loadStates.refresh
+            binding.progress.isVisible = refresh is LoadState.Loading
+            binding.emptyView.root.isVisible =
+                refresh is LoadState.NotLoading && adapter.itemCount == 0
+
+            val error = (refresh as? LoadState.Error)
+                ?: (loadStates.append as? LoadState.Error)
+                ?: (loadStates.prepend as? LoadState.Error)
+
+            error?.error?.localizedMessage?.let { msg ->
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun observeVm() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.songs.collect { list ->
-                        adapter.updateList(list)
-                        binding.emptyView.root.visibility = if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
-                    }
-                }
-                launch {
-                    viewModel.loading.collect { loading ->
-                        binding.progress.isVisible = loading
-                        binding.emptyView.root.isVisible = !loading && adapter.itemCount == 0
+                    viewModel.pagedSongs.collectLatest { pagingData ->
+                        adapter.submitData(pagingData)
                     }
                 }
             }

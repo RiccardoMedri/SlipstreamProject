@@ -46,6 +46,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation(project(path = ":domain"))
     implementation("org.jellyfin.sdk:jellyfin-core:1.6.8")
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
