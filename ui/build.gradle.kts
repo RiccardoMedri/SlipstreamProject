@@ -47,8 +47,13 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(project(path = ":domain"))
+    //potential handle this via viewholder or gateways
     implementation("androidx.fragment:fragment-ktx:1.8.4")
     implementation("com.github.bumptech.glide:glide:5.0.4")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.paging:paging-runtime-ktx:3.3.6")
+    implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-ui:1.8.0")
+    implementation("androidx.media3:media3-common:1.8.0")
+    implementation("androidx.media3:media3-session:1.8.0")
 }

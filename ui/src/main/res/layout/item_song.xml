@@ -16,17 +16,15 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- existing title/subtitle/trailing views … make them constrained to cover -->
-    <!-- Example: -->
     <TextView
         android:id="@+id/title"
         style="@style/TextAppearance.Material3.BodyLarge"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
         app:layout_constraintStart_toEndOf="@id/cover"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/trailing"
-        android:layout_marginStart="12dp"/>
+        app:layout_constraintEnd_toStartOf="@id/trailing" />
 
     <TextView
         android:id="@+id/subtitle"
@@ -37,12 +35,12 @@
         app:layout_constraintTop_toBottomOf="@id/title"
         app:layout_constraintEnd_toStartOf="@id/trailing"
         android:ellipsize="end"
-        android:maxLines="1"/>
+        android:maxLines="1" />
 
     <TextView
         android:id="@+id/trailing"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

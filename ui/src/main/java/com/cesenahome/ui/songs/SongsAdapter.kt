@@ -11,7 +11,7 @@ import com.bumptech.glide.Glide
 import java.util.concurrent.TimeUnit
 
 class SongsAdapter(
-    private val onSongClick: ((Song) -> Unit)? = null
+    private val onSongClick: (Song) -> Unit
 ): PagingDataAdapter<Song, SongsAdapter.VH>(DIFF) {
 
     companion object {

@@ -13,6 +13,8 @@ object UseCaseProvider {
     lateinit var getHomepageMenuUseCase: GetHomepageMenuUseCase
     lateinit var getLibraryCountsUseCase: GetLibraryCountsUseCase
     lateinit var getPagedSongsUseCase: GetPagedSongsUseCase
+    lateinit var resolveStreamUrlUseCase: ResolveStreamUrlUseCase
+
 
 
     fun setup(repositoryProvider: RepositoryProvider) {
@@ -24,5 +26,6 @@ object UseCaseProvider {
         getHomepageMenuUseCase = GetHomepageMenuUseCaseImpl(repositoryProvider.homeRepository)
         getLibraryCountsUseCase = GetLibraryCountsUseCaseImpl(repositoryProvider.homeRepository)
         getPagedSongsUseCase = GetPagedSongsUseCaseImpl(repositoryProvider.songsRepository)
+        resolveStreamUrlUseCase = ResolveStreamUrlUseCaseImpl(repositoryProvider.playerRepository)
     }
 }

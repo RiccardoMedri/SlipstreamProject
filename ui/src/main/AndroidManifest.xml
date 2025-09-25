@@ -11,6 +11,14 @@
         <activity
             android:name=".login.LoginActivity"
             android:exported="false" />
+        <service
+            android:name=".player.MusicService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".splash.SplashActivity"
             android:exported="true">

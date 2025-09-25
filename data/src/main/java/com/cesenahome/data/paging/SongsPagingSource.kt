@@ -45,10 +45,8 @@ class SongsPagingSource(
     }
 
     private fun BaseItemDto.toDomain(): Song {
-        val ticks = runTimeTicks // 100ns per tick
+        val ticks = runTimeTicks
         val idStr = id?.toString().orEmpty()
-
-        // Try both properties (Jellyfin DTOs expose one or both)
         val primaryTag = imageTags?.get(ImageType.PRIMARY) ?: albumPrimaryImageTag
 
         return Song(

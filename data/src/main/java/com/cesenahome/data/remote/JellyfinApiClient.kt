@@ -121,6 +121,11 @@ class JellyfinApiClient(
         val base = baseUrl().takeIf { it.isNotBlank() } ?: return null
         val token = accessToken() ?: return null
         val user = currentUserIdString() ?: return null
+
+        // 1) Try direct/original file (no transcoding):
+        // Works if the original container is playable by ExoPlayer on the device.
+        // ExoPlayer supports mp3/aac/flac/wav/ogg/m4a etc. If this 401s or format is weird, fallback.
+        val direct = "${base}Items/$itemId/File?api_key=$token"
         // Universal endpoint picks a suitable container/codec automatically.
         return "${base}Audio/$itemId/universal?UserId=$user&api_key=$token"
     }
