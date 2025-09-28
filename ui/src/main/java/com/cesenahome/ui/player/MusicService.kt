@@ -4,7 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
+// import androidx.media3.common.MimeTypes // Removed this import
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
@@ -26,8 +26,6 @@ class MusicService : MediaLibraryService() {
 
     private lateinit var player: ExoPlayer
     private var session: MediaLibrarySession? = null
-
-    // Domain use case via manual DI (UseCaseProvider is initialized in Application.onCreate)
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
 
     override fun onCreate() {
@@ -60,13 +58,25 @@ class MusicService : MediaLibraryService() {
                             item // unchanged; playback will fail gracefully if truly unresolved
                         } else {
                             item.buildUpon()
-                                .setMimeType(MimeTypes.APPLICATION_M3U8)
+                                // .setMimeType(MimeTypes.A) // Line removed
                                 .setUri(stream)
                                 .build()
                         }
                     }.toMutableList()
                 }
                 return Futures.immediateFuture(resolved)
+            }
+
+            override fun onPlaybackResumption(
+                mediaSession: MediaSession,
+                controller: MediaSession.ControllerInfo
+            ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+                // Default implementation from MediaLibraryService.Callback.
+                // You might need to customize this based on your app's specific needs,
+                // for example, by fetching the last played media item from a persistent store.
+                player.prepare()
+                player.play()
+                return super.onPlaybackResumption(mediaSession, controller)
             }
         }
 

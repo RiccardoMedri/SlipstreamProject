@@ -29,27 +29,27 @@ class JellyfinApiClient(
     }
 
     @Volatile
-    private var api: ApiClient? = null
+    private var apiClient: ApiClient? = null
 
     @Volatile
     private var currentUserId: UUID? = null
 
     fun initializeOrUpdateClient(serverUrl: String) {
         val base = normalizeServerUrl(serverUrl)
-        api = jellyfin.createApi(baseUrl = base)
+        apiClient = jellyfin.createApi(baseUrl = base)
     }
 
     suspend fun login(username: String, password: String): Result<User> = withContext(Dispatchers.IO) {
-        val apiClient = api ?: return@withContext Result.failure(
+        val currentApi = apiClient ?: return@withContext Result.failure(
             IllegalStateException("ApiClient not initialized. Call initializeOrUpdateClient() first.")
         )
         try {
-            val auth by apiClient.userApi.authenticateUserByName(
+            val auth by currentApi.userApi.authenticateUserByName(
                 username = username,
                 password = password
             )
 
-            apiClient.update(accessToken = auth.accessToken)
+            currentApi.update(accessToken = auth.accessToken)
 
             currentUserId = auth.user?.id
 
@@ -58,7 +58,7 @@ class JellyfinApiClient(
             val user = User(
                 userId = uidString,
                 name = auth.user?.name,
-                serverUrl = apiClient.baseUrl.toString()
+                serverUrl = currentApi.baseUrl.toString()
             )
             Result.success(user)
         } catch (e: InvalidStatusException) {
@@ -68,10 +68,9 @@ class JellyfinApiClient(
             Result.failure(Exception("Login failed: ${t.message}", t))
         }
     }
-
     private suspend fun getCountForKinds(vararg kinds: BaseItemKind): Int = withContext(Dispatchers.IO) {
-        val apiClient = api ?: error("ApiClient not initialized")
-        val response by apiClient.itemsApi.getItems(
+        val currentApi = apiClient ?: error("ApiClient not initialized")
+        val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),   // now UUID?
             recursive = true,
             includeItemTypes = kinds.toList(),
@@ -80,25 +79,21 @@ class JellyfinApiClient(
         )
         response.totalRecordCount ?: response.items.size
     }
-
     fun getCurrentUserId(): UUID? = currentUserId
-
     fun setCurrentUserIdFromString(id: String?) {
         currentUserId = id?.takeIf { it.isNotBlank() }?.let { runCatching { UUID.fromString(it) }.getOrNull() }
     }
-
-    fun currentApi(): ApiClient? = api
+    fun currentApi(): ApiClient? = apiClient
     suspend fun getArtistsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ARTIST)
     suspend fun getAlbumsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ALBUM)
     suspend fun getPlaylistsCount(): Int = getCountForKinds(BaseItemKind.PLAYLIST)
     suspend fun getSongsCount(): Int = getCountForKinds(BaseItemKind.AUDIO)
-    fun baseUrl(): String = api?.baseUrl?.toString().orEmpty()
-    fun accessToken(): String? = api?.accessToken
+    fun baseUrl(): String = apiClient?.baseUrl?.toString().orEmpty()
+    fun accessToken(): String? = apiClient?.accessToken
     fun currentUserIdString(): String? = currentUserId?.toString()
-
     suspend fun fetchSongsAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
-        val apiClient = currentApi() ?: error("ApiClient not initialized")
-        val response by apiClient.itemsApi.getItems(
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.AUDIO),
@@ -109,7 +104,6 @@ class JellyfinApiClient(
         )
         response.items
     }
-
     fun buildImageUrl(itemId: String, imageTag: String?, maxSize: Int = 256): String? {
         val base = baseUrl().takeIf { it.isNotBlank() } ?: return null
         val token = accessToken() ?: return null
@@ -120,18 +114,19 @@ class JellyfinApiClient(
     fun buildAudioStreamUrl(itemId: String): String? {
         val base = baseUrl().takeIf { it.isNotBlank() } ?: return null
         val token = accessToken() ?: return null
-        val user = currentUserIdString() ?: return null
+        // val user = currentUserIdString() ?: return null // Not needed for direct URL
 
         // 1) Try direct/original file (no transcoding):
         // Works if the original container is playable by ExoPlayer on the device.
         // ExoPlayer supports mp3/aac/flac/wav/ogg/m4a etc. If this 401s or format is weird, fallback.
         val direct = "${base}Items/$itemId/File?api_key=$token"
+        return direct // Return the direct URL
         // Universal endpoint picks a suitable container/codec automatically.
-        return "${base}Audio/$itemId/universal?UserId=$user&api_key=$token"
+        // return "${base}Audio/$itemId/universal?UserId=$user&api_key=$token"
     }
 
     fun clearSession() {
-        api?.update(accessToken = null)
+        apiClient?.update(accessToken = null)
     }
 
     private fun normalizeServerUrl(input: String): String {
