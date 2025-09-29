@@ -21,6 +21,9 @@
             </intent-filter>
         </service>
         <activity
+            android:name=".player.PlayerActivity"
+            android:exported="false" />
+        <activity
             android:name=".splash.SplashActivity"
             android:exported="true">
             <intent-filter>

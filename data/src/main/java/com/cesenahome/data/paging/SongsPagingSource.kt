@@ -55,7 +55,7 @@ class SongsPagingSource(
             album = album,
             artist = artists?.firstOrNull(),
             durationMs = ticks?.let { it / 10_000L },
-            artworkUrl = api.buildImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 256)
+            artworkUrl = api.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 256)
         )
     }
 }

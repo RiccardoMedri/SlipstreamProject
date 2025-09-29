@@ -1,32 +1,25 @@
 package com.cesenahome.ui.songs
 
-import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.Song
 import com.cesenahome.ui.databinding.ActivitySongsBinding
-import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.MoreExecutors
+import com.cesenahome.ui.player.PlayerActivity // Import PlayerActivity
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
-import com.cesenahome.ui.player.MusicService
-
 
 class SongsActivity : AppCompatActivity() {
 
@@ -36,28 +29,14 @@ class SongsActivity : AppCompatActivity() {
     private val viewModel: SongsViewModel by lazy {
         SongsViewModel(UseCaseProvider.getPagedSongsUseCase)
     }
-    private var controller: MediaController? = null
-    private var controllerFuture: ListenableFuture<MediaController>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupController()
         setupList()
         observeVm()
-    }
-
-    @androidx.annotation.OptIn(UnstableApi::class)
-    private fun setupController() {
-        val token = SessionToken(this, ComponentName(this, MusicService::class.java))
-        controllerFuture = MediaController.Builder(this, token).buildAsync().also { future ->
-            future.addListener(
-                { controller = future.get() },
-                MoreExecutors.directExecutor()
-            )
-        }
     }
 
     private fun setupList() {
@@ -99,7 +78,7 @@ class SongsActivity : AppCompatActivity() {
                 launch {
                     viewModel.playCommands.collect { cmd ->
                         when (cmd) {
-                            is SongsViewModel.PlayCommand.PlaySong -> play(cmd.song)
+                            is SongsViewModel.PlayCommand.PlaySong -> launchPlayerActivity(cmd.song)
                         }
                     }
                 }
@@ -107,31 +86,21 @@ class SongsActivity : AppCompatActivity() {
         }
     }
 
-    private fun play(song: Song) {
-        val metadata = MediaMetadata.Builder()
-            .setTitle(song.title)
-            .setArtist(song.artist)
-            .setAlbumTitle(song.album)
-            .apply { song.artworkUrl?.let { setArtworkUri(it.toUri()) } }
-            .build()
 
-        val item = MediaItem.Builder()
-            .setMediaId(song.id) // Service resolves URI from this mediaId
-            .setMediaMetadata(metadata)
-            .build()
-
-        controller?.apply {
-            setMediaItem(item)
-            prepare()
-            play()
-        } ?: Toast.makeText(this, "Player not ready yet", Toast.LENGTH_SHORT).show()
+    @OptIn(UnstableApi::class)
+    private fun launchPlayerActivity(song: Song) {
+        val intent = Intent(this, PlayerActivity::class.java).apply {
+            putExtra(PlayerActivity.EXTRA_SONG_ID, song.id)
+            putExtra(PlayerActivity.EXTRA_SONG_TITLE, song.title)
+            putExtra(PlayerActivity.EXTRA_SONG_ARTIST, song.artist)
+            putExtra(PlayerActivity.EXTRA_SONG_ALBUM, song.album)
+            putExtra(PlayerActivity.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
+            putExtra(PlayerActivity.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L) // Provide a default if null
+        }
+        startActivity(intent)
     }
 
     override fun onDestroy() {
-        controller?.release()
-        controller = null
-        controllerFuture?.cancel(true)
-        controllerFuture = null
         super.onDestroy()
     }
 }

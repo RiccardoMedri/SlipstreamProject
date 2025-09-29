@@ -65,7 +65,7 @@ class LoginRepositoryImpl(
                 name = saved.userName,
                 serverUrl = saved.serverUrl
             )
-            jellyfinApiClient.setCurrentUserIdFromString(saved.userId)
+            jellyfinApiClient.parseUuidOrNull(saved.userId)
             _currentUser.value = user
             user
         }.fold(
