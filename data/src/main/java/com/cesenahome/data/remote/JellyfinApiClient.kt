@@ -141,7 +141,7 @@ class JellyfinApiClient(
         val parsedArtistId = parseUuidOrNull(artistId) ?: error("Invalid artistId")
         val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
-            artistIds = listOf(parsedArtistId),
+            albumArtistIds = listOf(parsedArtistId),
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
             sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),

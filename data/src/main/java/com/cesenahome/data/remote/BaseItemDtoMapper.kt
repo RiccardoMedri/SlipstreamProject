@@ -38,7 +38,6 @@ fun BaseItemDto.toAlbum(apiClient: JellyfinApiClient): Album {
 fun BaseItemDto.toArtist(apiClient: JellyfinApiClient): Artist {
     val idStr = this.id?.toString().orEmpty()
     val primaryTag = this.imageTags?.get(ImageType.PRIMARY)
-    val albumArtistName = this.albumArtist ?: this.artists?.firstOrNull()
 
     return Artist(
         id = idStr,

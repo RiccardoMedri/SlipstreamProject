@@ -33,7 +33,6 @@ android {
 }
 
 dependencies {
-
     implementation("androidx.paging:paging-runtime-ktx:3.3.6")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

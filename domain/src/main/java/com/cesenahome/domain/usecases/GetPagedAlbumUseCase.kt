@@ -12,5 +12,5 @@ fun interface GetPagedAlbumUseCase {
 class GetPagedAlbumUseCaseImpl(
     private val repository: AlbumRepository
 ): GetPagedAlbumUseCase {
-    override fun invoke(artistId: String?): Flow<PagingData<Album>> = repository.pagingAlbumsAlphabetical()
+    override fun invoke(artistId: String?): Flow<PagingData<Album>> = repository.pagingAlbumsAlphabetical(artistId = artistId)
 }
