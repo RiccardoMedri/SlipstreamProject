@@ -8,10 +8,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Build
+import androidx.core.net.toUri 
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata // Added import
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -20,18 +21,23 @@ import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.cesenahome.domain.di.UseCaseProvider
+import com.cesenahome.domain.models.Song 
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 @UnstableApi
-class MusicService : MediaLibraryService() {
+class PlayerService : MediaLibraryService() {
 
     private lateinit var player: ExoPlayer
     private var session: MediaLibrarySession? = null
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
+    private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase } // Correctly initialized
+
+
     private val noisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) {
             if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == i.action && player.isPlaying) {
@@ -89,12 +95,11 @@ class MusicService : MediaLibraryService() {
                 browser: MediaSession.ControllerInfo,
                 params: LibraryParams?
             ): ListenableFuture<LibraryResult<MediaItem>> {
-                // A single browsable root item
                 val rootMediaItem = MediaItem.Builder()
-                    .setMediaId("root_id")
+                    .setMediaId(ROOT_ID)
                     .setMediaMetadata(
                         MediaMetadata.Builder()
-                            .setTitle("My Music Library")
+                            .setTitle("Slipstream Library")
                             .setIsBrowsable(true)
                             .setIsPlayable(false)
                             .build()
@@ -112,42 +117,43 @@ class MusicService : MediaLibraryService() {
                 params: LibraryParams?
             ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
 
-                val result: ImmutableList<MediaItem> = when (parentId) {
+                val mediaItemsFuture: ListenableFuture<ImmutableList<MediaItem>> = 
+                    Futures.submitAsync(
+                        {
+                            val items = runBlocking(Dispatchers.IO) { 
+                                when (parentId) {
+                                    ROOT_ID -> {
+                                        ImmutableList.of(
+                                            browsableNode(NODE_ID_QUEUE, "Current Queue", false),
+                                            browsableNode(NODE_ID_ALL_SONGS, "All Songs", false)
+                                        )
+                                    }
+                                    NODE_ID_QUEUE -> {
+                                        val queueItems = snapshotQueueAsItems()
+                                        paginate(queueItems, page, pageSize)
+                                    }
+                                    NODE_ID_ALL_SONGS -> {
+                                        val songsResult = getSimpleSongsListUseCase(page, pageSize)
+                                        if (songsResult.isSuccess) {
+                                            songsResult.getOrNull()?.map { songToMediaItem(it) }?.let {
+                                                ImmutableList.copyOf(it)
+                                            } ?: ImmutableList.of()
+                                        } else {
+                                            ImmutableList.of()
+                                        }
+                                    }
+                                    else -> ImmutableList.of()
+                                }
+                            }
+                            Futures.immediateFuture(items)
+                        },
+                        MoreExecutors.directExecutor()
+                    )
 
-                    // 1) The root exposes two browsable nodes
-                    "root_id" -> {
-                        ImmutableList.of(
-                            browsableNode(
-                                id = "node_now_playing",
-                                title = "Now Playing",
-                                playable = false
-                            ),
-                            browsableNode(
-                                id = "node_recents",
-                                title = "Recents",
-                                playable = false
-                            )
-                        )
-                    }
-
-                    // 2) Children of "Now Playing" = current queue (paged)
-                    "node_now_playing" -> {
-                        val all = snapshotQueueAsItems()
-                        paginate(all, page, pageSize)
-                    }
-
-                    // 3) "Recents" placeholder (empty list for now)
-                    "node_recents" -> {
-                        ImmutableList.of()
-                    }
-
-                    // Unknown parent → return empty list gracefully
-                    else -> {
-                        ImmutableList.of()
-                    }
-                }
-
-                return Futures.immediateFuture(LibraryResult.ofItemList(result, params))
+                return Futures.transform(mediaItemsFuture, 
+                    { items -> LibraryResult.ofItemList(items ?: ImmutableList.of(), params) }, 
+                    MoreExecutors.directExecutor()
+                )
             }
 
             override fun onAddMediaItems(
@@ -202,10 +208,6 @@ class MusicService : MediaLibraryService() {
         super.onDestroy()
     }
 
-
-
-    //HELPERS
-
     private fun ensureNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
             val nm = getSystemService(NotificationManager::class.java)
@@ -219,58 +221,56 @@ class MusicService : MediaLibraryService() {
         }
     }
 
-    private fun browsableNode(
-        id: String,
-        title: String,
-        playable: Boolean
-    ): MediaItem {
+    private fun browsableNode(id: String, title: String, playable: Boolean): MediaItem {
         return MediaItem.Builder()
             .setMediaId(id)
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(title)
                     .setIsBrowsable(true)
-                    .setIsPlayable(playable) // false for folders
+                    .setIsPlayable(playable)
                     .build()
             )
             .build()
     }
+    
+    private fun songToMediaItem(song: Song): MediaItem {
+        val metadataBuilder = MediaMetadata.Builder()
+            .setTitle(song.title)
+            .setArtist(song.artist)
+            .setAlbumTitle(song.album)
+            .setIsPlayable(true) // Songs are playable
+            .setIsBrowsable(false) // Individual songs are typically not browsable folders
+        song.artworkUrl?.let { metadataBuilder.setArtworkUri(it.toUri()) }
+        // You could also set MediaMetadata.Builder#setFolderType(MediaMetadata.FOLDER_TYPE_NONE)
 
-    /**
-     * Take a snapshot of the current queue as a list of MediaItems.
-     * These MediaItems already carry metadata (title/artist/artwork) that you set in the Activity
-     * when building the queue, so we can surface them to browsing clients.
-     */
+        return MediaItem.Builder()
+            .setMediaId(song.id)
+            .setMediaMetadata(metadataBuilder.build())
+            .build()
+    }
+
     private fun snapshotQueueAsItems(): List<MediaItem> {
-        val count = player.mediaItemCount
-        if (count <= 0) return emptyList()
-        val list = ArrayList<MediaItem>(count)
-        for (i in 0 until count) {
+        if (player.mediaItemCount <= 0) return emptyList()
+        val list = ArrayList<MediaItem>(player.mediaItemCount)
+        for (i in 0 until player.mediaItemCount) {
             list.add(player.getMediaItemAt(i))
         }
         return list
     }
 
-    /**
-     * Map page/pageSize into a sublist and return as ImmutableList.
-     * If pageSize <= 0, return all.
-     */
-    private fun paginate(
-        items: List<MediaItem>,
-        page: Int,
-        pageSize: Int
-    ): ImmutableList<MediaItem> {
-        if (items.isEmpty()) return ImmutableList.of()
-        if (pageSize <= 0) return ImmutableList.copyOf(items)
-
-        val start = (page.coerceAtLeast(0)) * pageSize
+    private fun paginate(items: List<MediaItem>, page: Int, pageSize: Int): ImmutableList<MediaItem> {
+        if (items.isEmpty() || pageSize <= 0) return ImmutableList.copyOf(items)
+        val start = page.coerceAtLeast(0) * pageSize
         if (start >= items.size) return ImmutableList.of()
-
         val endExclusive = (start + pageSize).coerceAtMost(items.size)
         return ImmutableList.copyOf(items.subList(start, endExclusive))
     }
 
     companion object {
         private const val CHANNEL_ID = "playback"
+        private const val ROOT_ID = "root_id"
+        private const val NODE_ID_QUEUE = "node_id_queue"
+        private const val NODE_ID_ALL_SONGS = "node_id_all_songs"
     }
 }

@@ -62,7 +62,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        val sessionToken = SessionToken(this, ComponentName(this, MusicService::class.java))
+        val sessionToken = SessionToken(this, ComponentName(this, PlayerService::class.java))
         mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
         mediaControllerFuture?.addListener(
             {

@@ -74,32 +74,6 @@ class JellyfinApiClient(
     suspend fun getAlbumsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ALBUM)
     suspend fun getPlaylistsCount(): Int = getCountForKinds(BaseItemKind.PLAYLIST)
     suspend fun getSongsCount(): Int = getCountForKinds(BaseItemKind.AUDIO)
-    suspend fun fetchSongsAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
-        val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val response by currentApi.itemsApi.getItems(
-            userId = getCurrentUserId(),
-            recursive = true,
-            includeItemTypes = listOf(BaseItemKind.AUDIO),
-            sortBy = listOf(ItemSortBy.NAME),
-            sortOrder = listOf(SortOrder.ASCENDING),
-            startIndex = startIndex,
-            limit = limit
-        )
-        response.items
-    }
-    suspend fun fetchAlbumAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
-        val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val response by currentApi.itemsApi.getItems(
-            userId = getCurrentUserId(),
-            recursive = true,
-            includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-            sortBy = listOf(ItemSortBy.NAME),
-            sortOrder = listOf(SortOrder.ASCENDING),
-            startIndex = startIndex,
-            limit = limit
-        )
-        response.items
-    }
     fun getImage (itemId: String, imageTag: String?, maxSize: Int): String? {
         val api = currentApi() ?: return null
         val id = parseUuidOrNull(itemId) ?: return null
@@ -119,6 +93,77 @@ class JellyfinApiClient(
             itemId = id,
             static = true
         )
+    }
+    suspend fun fetchSongsAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val response by currentApi.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.AUDIO),
+            sortBy = listOf(ItemSortBy.NAME),
+            sortOrder = listOf(SortOrder.ASCENDING),
+            startIndex = startIndex,
+            limit = limit
+        )
+        response.items
+    }
+    suspend fun fetchSongsByAlbumId(albumId: String, startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val parentId = parseUuidOrNull(albumId) ?: error("Invalid albumId")
+        val response by currentApi.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            parentId = parentId,
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.AUDIO),
+            sortBy = listOf(ItemSortBy.ALBUM_ARTIST, ItemSortBy.INDEX_NUMBER), // Or just ItemSortBy.NAME, or track number if available
+            sortOrder = listOf(SortOrder.ASCENDING, SortOrder.ASCENDING),
+            startIndex = startIndex,
+            limit = limit
+        )
+        response.items
+    }
+    suspend fun fetchAlbumAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val response by currentApi.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+            sortBy = listOf(ItemSortBy.NAME),
+            sortOrder = listOf(SortOrder.ASCENDING),
+            startIndex = startIndex,
+            limit = limit
+        )
+        response.items
+    }
+
+    suspend fun fetchAlbumsByArtistId(artistId: String, startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val parsedArtistId = parseUuidOrNull(artistId) ?: error("Invalid artistId")
+        val response by currentApi.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            artistIds = listOf(parsedArtistId),
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+            sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),
+            sortOrder = listOf(SortOrder.DESCENDING),
+            startIndex = startIndex,
+            limit = limit
+        )
+        response.items
+    }
+
+    suspend fun fetchArtistAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val response by currentApi.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.MUSIC_ARTIST),
+            sortBy = listOf(ItemSortBy.NAME),
+            sortOrder = listOf(SortOrder.ASCENDING),
+            startIndex = startIndex,
+            limit = limit
+        )
+        response.items
     }
     fun clearSession() {
         apiClient?.update(accessToken = null)

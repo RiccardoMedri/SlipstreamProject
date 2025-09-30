@@ -25,9 +25,15 @@ class SongsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySongsBinding
     private lateinit var adapter: SongsAdapter
-
+    private val albumId: String? by lazy {
+        intent.getStringExtra(EXTRA_ALBUM_ID)
+    }
     private val viewModel: SongsViewModel by lazy {
-        SongsViewModel(UseCaseProvider.getPagedSongsUseCase)
+        SongsViewModel(UseCaseProvider.getPagedSongsUseCase, albumId)
+    }
+    companion object {
+        const val EXTRA_ALBUM_ID = "extra_album_id"
+        const val EXTRA_ALBUM_TITLE = "extra_album_title"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

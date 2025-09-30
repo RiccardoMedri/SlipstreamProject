@@ -3,6 +3,12 @@
 
     <application>
         <activity
+            android:name=".artist.ArtistActivity"
+            android:exported="false" />
+        <activity
+            android:name=".album.AlbumActivity"
+            android:exported="false" />
+        <activity
             android:name=".songs.SongsActivity"
             android:exported="false" />
         <activity
@@ -12,14 +18,15 @@
             android:name=".login.LoginActivity"
             android:exported="false" />
         <service
-            android:name=".player.MusicService"
+            android:name=".player.PlayerService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="androidx.media3.session.MediaLibraryService" />
-                <action android:name="android.media.browse.MediaBrowserService"/>
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
         <activity
             android:name=".player.PlayerActivity"
             android:exported="false" />

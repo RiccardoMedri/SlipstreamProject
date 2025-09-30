@@ -2,16 +2,20 @@ package com.cesenahome.data.di
 
 import android.content.Context
 import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.repository.AlbumRepositoryImpl
+import com.cesenahome.data.repository.ArtistRepositoryImpl
 import com.cesenahome.data.repository.HomepageRepositoryImpl
 import com.cesenahome.data.repository.LoginRepositoryImpl
 import com.cesenahome.domain.repository.HomepageRepository
 import com.cesenahome.data.session.SessionDataStore
 import com.cesenahome.domain.di.RepositoryProvider
 import com.cesenahome.domain.repository.LoginRepository
-import com.cesenahome.domain.repository.SongsRepository
-import com.cesenahome.data.repository.SongsRepositoryImpl
+import com.cesenahome.domain.repository.SongRepository
+import com.cesenahome.data.repository.SongRepositoryImpl
 import com.cesenahome.domain.repository.PlayerRepository
 import com.cesenahome.data.repository.PlayerRepositoryImpl
+import com.cesenahome.domain.repository.AlbumRepository
+import com.cesenahome.domain.repository.ArtistRepository
 
 class RepositoryProviderImpl(
     private val context: Context
@@ -36,8 +40,8 @@ class RepositoryProviderImpl(
         )
     }
 
-    override val songsRepository: SongsRepository by lazy {
-        SongsRepositoryImpl(
+    override val songRepository: SongRepository by lazy {
+        SongRepositoryImpl(
             jellyfinApiClient = jellyfinApiClient
         )
     }
@@ -47,5 +51,14 @@ class RepositoryProviderImpl(
             jellyfinApiClient = jellyfinApiClient
         )
     }
-
+    override val albumRepository: AlbumRepository by lazy {
+        AlbumRepositoryImpl(
+            apiClient = jellyfinApiClient
+        )
+    }
+    override val artistRepository: ArtistRepository by lazy {
+        ArtistRepositoryImpl(
+            apiClient = jellyfinApiClient
+        )
+    }
 }

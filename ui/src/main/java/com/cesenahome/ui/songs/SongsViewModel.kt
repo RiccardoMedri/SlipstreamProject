@@ -12,11 +12,11 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
 class SongsViewModel(
-    getPagedSongsUseCase: GetPagedSongsUseCase
+    getPagedSongsUseCase: GetPagedSongsUseCase,
+    albumId: String? = null // Added albumId
 ) : ViewModel() {
 
-    // Flow that Paging manages. cachedIn keeps it alive across config changes.
-    val pagedSongs: Flow<PagingData<Song>> = getPagedSongsUseCase().cachedIn(viewModelScope)
+    val pagedSongs: Flow<PagingData<Song>> = getPagedSongsUseCase(albumId).cachedIn(viewModelScope)
 
     sealed interface PlayCommand {
         data class PlaySong(val song: Song) : PlayCommand

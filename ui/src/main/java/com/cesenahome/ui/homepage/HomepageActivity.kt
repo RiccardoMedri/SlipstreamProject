@@ -3,7 +3,6 @@ package com.cesenahome.ui.homepage
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -11,6 +10,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.ui.databinding.ActivityHomepageBinding
 import com.cesenahome.domain.models.HomeDestination
+import com.cesenahome.ui.album.AlbumActivity
+import com.cesenahome.ui.artist.ArtistActivity
 import com.cesenahome.ui.songs.SongsActivity
 import kotlinx.coroutines.launch
 
@@ -46,7 +47,6 @@ class HomepageActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.menu.collect { items ->
-                        // update button labels (+ optional counts)
                         items.forEach { item ->
                             when (item.destination) {
                                 HomeDestination.ARTISTS ->
@@ -76,8 +76,8 @@ class HomepageActivity : AppCompatActivity() {
 
     private fun onDestination(dest: HomeDestination) {
         when (dest) {
-            HomeDestination.ARTISTS   -> { /* TODO */ }
-            HomeDestination.ALBUMS    -> { /* TODO */ }
+            HomeDestination.ARTISTS   -> startActivity(Intent(this, ArtistActivity::class.java))
+            HomeDestination.ALBUMS    -> startActivity(Intent(this, AlbumActivity::class.java))
             HomeDestination.PLAYLISTS -> { /* TODO */ }
             HomeDestination.SONGS     -> startActivity(Intent(this, SongsActivity::class.java))
         }
