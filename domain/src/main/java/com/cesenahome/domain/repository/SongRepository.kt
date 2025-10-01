@@ -2,11 +2,12 @@ package com.cesenahome.domain.repository
 
 import androidx.paging.PagingData
 import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.SongPagingRequest
 import kotlinx.coroutines.flow.Flow
-import kotlin.Result // Added for the new method
+import kotlin.Result
 
 interface SongRepository {
 
-    fun pagingSongsAlphabetical(pageSize: Int = 200, albumId: String? = null): Flow<PagingData<Song>>
+    fun pagingSongs(pageSize: Int = 200, request: SongPagingRequest): Flow<PagingData<Song>>
     suspend fun getSongsList(page: Int, pageSize: Int): Result<List<Song>>
 }

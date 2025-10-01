@@ -1,0 +1,22 @@
+package com.cesenahome.domain.models
+
+enum class SongSortField {
+    NAME,
+    ALBUM_ARTIST,
+    DATE_ADDED
+}
+
+enum class SortDirection {
+    ASCENDING,
+    DESCENDING
+}
+
+data class SongSortOption(
+    val field: SongSortField = SongSortField.NAME,
+    val direction: SortDirection = SortDirection.ASCENDING
+)
+
+data class SongPagingRequest(
+    val albumId: String? = null,
+    val sortOption: SongSortOption = SongSortOption()
+)

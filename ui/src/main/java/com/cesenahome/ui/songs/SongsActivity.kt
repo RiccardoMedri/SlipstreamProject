@@ -2,9 +2,11 @@ package com.cesenahome.ui.songs
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -16,8 +18,11 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.SongSortField
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivitySongsBinding
-import com.cesenahome.ui.player.PlayerActivity // Import PlayerActivity
+import com.cesenahome.ui.player.PlayerActivity
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -41,8 +46,22 @@ class SongsActivity : AppCompatActivity() {
         binding = ActivitySongsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupToolbar()
         setupList()
         observeVm()
+    }
+
+    private fun setupToolbar() {
+        binding.toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+
+        binding.songToolbarFilters.buttonSortField.setOnClickListener { view ->
+            showSortFieldMenu(view)
+        }
+        binding.songToolbarFilters.buttonSortOrder.setOnClickListener { view ->
+            showSortOrderMenu(view)
+        }
     }
 
     private fun setupList() {
@@ -53,10 +72,6 @@ class SongsActivity : AppCompatActivity() {
         binding.recyclerSongs.addItemDecoration(
             DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
         )
-
-        binding.toolbar.setNavigationOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
 
         adapter.addLoadStateListener { loadStates ->
             val refresh = loadStates.refresh
@@ -88,8 +103,82 @@ class SongsActivity : AppCompatActivity() {
                         }
                     }
                 }
+                launch {
+                    viewModel.sortState.collect { sortOption ->
+                        updateSortButtons(sortOption.field, sortOption.direction)
+                    }
+                }
             }
         }
+    }
+
+    private fun updateSortButtons(field: SongSortField, direction: SortDirection) {
+        val sortLabelRes = when (field) {
+            SongSortField.NAME -> R.string.songs_sort_by_name
+            SongSortField.ALBUM_ARTIST -> R.string.songs_sort_by_album_artist
+            SongSortField.DATE_ADDED -> R.string.songs_sort_by_date_added
+        }
+        val orderLabelRes = when (direction) {
+            SortDirection.ASCENDING -> R.string.songs_sort_order_ascending
+            SortDirection.DESCENDING -> R.string.songs_sort_order_descending
+        }
+        binding.songToolbarFilters.buttonSortField.text =
+            getString(R.string.songs_sort_by_label, getString(sortLabelRes))
+        binding.songToolbarFilters.buttonSortOrder.text =
+            getString(R.string.songs_sort_order_label, getString(orderLabelRes))
+        binding.songToolbarFilters.buttonSortField.contentDescription =
+            binding.songToolbarFilters.buttonSortField.text
+        binding.songToolbarFilters.buttonSortOrder.contentDescription =
+            binding.songToolbarFilters.buttonSortOrder.text
+    }
+    private fun showSortFieldMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_song_sort_field, popup.menu)
+        when (viewModel.sortState.value.field) {
+            SongSortField.NAME -> popup.menu.findItem(R.id.sort_by_name)?.isChecked = true
+            SongSortField.ALBUM_ARTIST -> popup.menu.findItem(R.id.sort_by_album_artist)?.isChecked = true
+            SongSortField.DATE_ADDED -> popup.menu.findItem(R.id.sort_by_date_added)?.isChecked = true
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val selected = when (item.itemId) {
+                R.id.sort_by_name -> SongSortField.NAME
+                R.id.sort_by_album_artist -> SongSortField.ALBUM_ARTIST
+                R.id.sort_by_date_added -> SongSortField.DATE_ADDED
+                else -> null
+            }
+            selected?.let { field ->
+                if (field != viewModel.sortState.value.field) {
+                    viewModel.onSortFieldSelected(field)
+                    adapter.refresh()
+                }
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showSortOrderMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_song_sort_order, popup.menu)
+        when (viewModel.sortState.value.direction) {
+            SortDirection.ASCENDING -> popup.menu.findItem(R.id.order_ascending)?.isChecked = true
+            SortDirection.DESCENDING -> popup.menu.findItem(R.id.order_descending)?.isChecked = true
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val selected = when (item.itemId) {
+                R.id.order_ascending -> SortDirection.ASCENDING
+                R.id.order_descending -> SortDirection.DESCENDING
+                else -> null
+            }
+            selected?.let { direction ->
+                if (direction != viewModel.sortState.value.direction) {
+                    viewModel.onSortDirectionSelected(direction)
+                    adapter.refresh()
+                }
+            }
+            true
+        }
+        popup.show()
     }
 
 
@@ -101,7 +190,7 @@ class SongsActivity : AppCompatActivity() {
             putExtra(PlayerActivity.EXTRA_SONG_ARTIST, song.artist)
             putExtra(PlayerActivity.EXTRA_SONG_ALBUM, song.album)
             putExtra(PlayerActivity.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
-            putExtra(PlayerActivity.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L) // Provide a default if null
+            putExtra(PlayerActivity.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
         }
         startActivity(intent)
     }

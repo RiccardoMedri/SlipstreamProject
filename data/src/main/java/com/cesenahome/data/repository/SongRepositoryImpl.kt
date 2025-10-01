@@ -1,15 +1,18 @@
 package com.cesenahome.data.repository
 
-import com.cesenahome.data.remote.JellyfinApiClient
-import com.cesenahome.domain.models.Song
-import com.cesenahome.domain.repository.SongRepository
-import kotlinx.coroutines.flow.Flow
-import androidx.paging.PagingData
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.cesenahome.data.paging.SongPagingSource
+import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toSong
+import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.SongPagingRequest
+import com.cesenahome.domain.models.SongSortField
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.repository.SongRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlin.Result
 
@@ -17,7 +20,7 @@ class SongRepositoryImpl(
     private val jellyfinApiClient: JellyfinApiClient
 ) : SongRepository {
 
-    override fun pagingSongsAlphabetical(pageSize: Int, albumId: String?): Flow<PagingData<Song>> {
+    override fun pagingSongs(pageSize: Int, request: SongPagingRequest): Flow<PagingData<Song>> {
         return Pager(
             config = PagingConfig(
                 pageSize = pageSize,
@@ -26,18 +29,19 @@ class SongRepositoryImpl(
                 enablePlaceholders = false,
                 maxSize = pageSize * 5
             ),
-            pagingSourceFactory = { SongPagingSource(jellyfinApiClient, pageSize, albumId) }
+            pagingSourceFactory = { SongPagingSource( api = jellyfinApiClient, pageSize = pageSize, request = request) }
         ).flow
     }
 
     override suspend fun getSongsList(page: Int, pageSize: Int): Result<List<Song>> = withContext(Dispatchers.IO) {
         try {
             val startIndex = page * pageSize
-            // This method might also need an albumId if you intend to use it for specific albums elsewhere.
-            // For now, it remains unchanged as per the current request focusing on paging.
-            val dtoList = jellyfinApiClient.fetchSongsAlphabetical(
+            val dtoList = jellyfinApiClient.fetchSongs(
                 startIndex = startIndex,
-                limit = pageSize
+                limit = pageSize,
+                sortField = SongSortField.NAME,
+                sortDirection = SortDirection.ASCENDING,
+                albumId = null
             )
             val songList = dtoList.map { it.toSong(jellyfinApiClient) }
             Result.success(songList)

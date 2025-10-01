@@ -2,6 +2,8 @@ package com.cesenahome.data.remote
 
 import android.content.Context
 import com.cesenahome.domain.models.User
+import com.cesenahome.domain.models.SongSortField
+import com.cesenahome.domain.models.SortDirection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.Jellyfin
@@ -94,29 +96,17 @@ class JellyfinApiClient(
             static = true
         )
     }
-    suspend fun fetchSongsAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+    suspend fun fetchSongs(startIndex: Int, limit: Int, sortField: SongSortField, sortDirection: SortDirection, albumId: String?
+    ): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val parentUuid = parseUuidOrNull(albumId)
         val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
+            parentId = parentUuid,
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.AUDIO),
-            sortBy = listOf(ItemSortBy.NAME),
-            sortOrder = listOf(SortOrder.ASCENDING),
-            startIndex = startIndex,
-            limit = limit
-        )
-        response.items
-    }
-    suspend fun fetchSongsByAlbumId(albumId: String, startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
-        val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val parentId = parseUuidOrNull(albumId) ?: error("Invalid albumId")
-        val response by currentApi.itemsApi.getItems(
-            userId = getCurrentUserId(),
-            parentId = parentId,
-            recursive = true,
-            includeItemTypes = listOf(BaseItemKind.AUDIO),
-            sortBy = listOf(ItemSortBy.ALBUM_ARTIST, ItemSortBy.INDEX_NUMBER), // Or just ItemSortBy.NAME, or track number if available
-            sortOrder = listOf(SortOrder.ASCENDING, SortOrder.ASCENDING),
+            sortBy = buildSongSortBy(sortField, parentUuid != null),
+            sortOrder = listOf(sortDirection.toApiSortOrder()),
             startIndex = startIndex,
             limit = limit
         )
@@ -178,6 +168,21 @@ class JellyfinApiClient(
         require(input.isNotBlank()) { "Server URL is blank." }
         require(Regex("^https?://.+").matches(input)) { "Server URL must start with http:// or https://." }
         return if (input.endsWith("/")) input else "$input/"
+    }
+    private fun buildSongSortBy(sortField: SongSortField, hasParent: Boolean): List<ItemSortBy> {
+        return when {
+            hasParent && sortField == SongSortField.NAME -> listOf(ItemSortBy.INDEX_NUMBER)
+            else -> listOf(sortField.toApiSortBy())
+        }
+    }
+    private fun SongSortField.toApiSortBy(): ItemSortBy = when (this) {
+        SongSortField.NAME -> ItemSortBy.NAME
+        SongSortField.ALBUM_ARTIST -> ItemSortBy.ALBUM_ARTIST
+        SongSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
+    }
+    private fun SortDirection.toApiSortOrder(): SortOrder = when (this) {
+        SortDirection.ASCENDING -> SortOrder.ASCENDING
+        SortDirection.DESCENDING -> SortOrder.DESCENDING
     }
     private suspend fun getCountForKinds(vararg kinds: BaseItemKind): Int = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")

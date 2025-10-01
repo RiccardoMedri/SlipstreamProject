@@ -5,12 +5,12 @@ import androidx.paging.PagingState
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toSong
 import com.cesenahome.domain.models.Song
-import org.jellyfin.sdk.model.api.BaseItemDto
+import com.cesenahome.domain.models.SongPagingRequest
 
 class SongPagingSource(
     private val api: JellyfinApiClient,
     private val pageSize: Int,
-    private val albumId: String? = null
+    private val request: SongPagingRequest
 ) : PagingSource<Int, Song>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Song> {
@@ -18,11 +18,13 @@ class SongPagingSource(
             val startIndex = params.key ?: 0
             val limit = params.loadSize.coerceAtMost(pageSize)
 
-            val page: List<BaseItemDto> = if (albumId != null) {
-                api.fetchSongsByAlbumId(albumId = albumId, startIndex = startIndex, limit = limit)
-            } else {
-                api.fetchSongsAlphabetical(startIndex = startIndex, limit = limit)
-            }
+            val page = api.fetchSongs(
+                startIndex = startIndex,
+                limit = limit,
+                sortField = request.sortOption.field,
+                sortDirection = request.sortOption.direction,
+                albumId = request.albumId
+            )
 
             val data = page.map { it.toSong(api) }
 
