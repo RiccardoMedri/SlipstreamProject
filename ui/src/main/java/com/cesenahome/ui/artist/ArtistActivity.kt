@@ -2,16 +2,24 @@ package com.cesenahome.ui.artist
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
+import com.cesenahome.domain.models.ArtistSortField
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.ui.R
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.databinding.ActivityArtistBinding
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -29,9 +37,23 @@ class ArtistActivity : AppCompatActivity() {
         binding = ActivityArtistBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
+        setupToolbar()
         setupRecyclerView()
-        observeArtists()
+        observeViewModel()
         observeLoadState()
+    }
+
+    private fun setupToolbar() {
+        binding.toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+        binding.artistToolbarFilters.buttonSortField.setOnClickListener { view ->
+            showSortFieldMenu(view)
+        }
+        binding.artistToolbarFilters.buttonSortOrder.setOnClickListener { view ->
+            showSortOrderMenu(view)
+        }
     }
 
     private fun setupRecyclerView() {
@@ -47,31 +69,109 @@ class ArtistActivity : AppCompatActivity() {
         }
     }
 
-    private fun observeArtists() {
+    private fun observeViewModel() {
         lifecycleScope.launch {
-            viewModel.pagedArtists.collectLatest { pagingData ->
-                artistsAdapter.submitData(pagingData)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.pagedArtists.collectLatest { pagingData ->
+                        artistsAdapter.submitData(pagingData)
+                    }
+                }
+                launch {
+                    viewModel.sortState.collect { sortOption ->
+                        updateSortButtons(sortOption.field, sortOption.direction)
+                    }
+                }
             }
         }
     }
 
     private fun observeLoadState() {
         lifecycleScope.launch {
-            artistsAdapter.loadStateFlow.collectLatest { loadStates ->
-                binding.progressBar.isVisible = loadStates.refresh is LoadState.Loading
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                artistsAdapter.loadStateFlow.collectLatest { loadStates ->
+                    binding.progressBar.isVisible = loadStates.refresh is LoadState.Loading
 
                 val errorState = loadStates.refresh as? LoadState.Error
                     ?: loadStates.append as? LoadState.Error
                     ?: loadStates.prepend as? LoadState.Error
 
-                errorState?.let {
-                    Toast.makeText(
-                        this@ArtistActivity,
-                        "Error: ${it.error.localizedMessage}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    errorState?.let {
+                        Toast.makeText(
+                            this@ArtistActivity,
+                            "Error: ${it.error.localizedMessage}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
         }
+    }
+
+    private fun updateSortButtons(field: ArtistSortField, direction: SortDirection) {
+        val sortLabelRes = when (field) {
+            ArtistSortField.NAME -> R.string.artists_sort_by_name
+            ArtistSortField.DATE_ADDED -> R.string.artists_sort_by_date_added
+        }
+        val orderLabelRes = when (direction) {
+            SortDirection.ASCENDING -> R.string.sort_order_ascending
+            SortDirection.DESCENDING -> R.string.sort_order_descending
+        }
+        binding.artistToolbarFilters.buttonSortField.text =
+            getString(R.string.sort_field_label, getString(sortLabelRes))
+        binding.artistToolbarFilters.buttonSortOrder.text =
+            getString(R.string.sort_order_label, getString(orderLabelRes))
+        binding.artistToolbarFilters.buttonSortField.contentDescription =
+            binding.artistToolbarFilters.buttonSortField.text
+        binding.artistToolbarFilters.buttonSortOrder.contentDescription =
+            binding.artistToolbarFilters.buttonSortOrder.text
+    }
+
+    private fun showSortFieldMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_artist_sort_field, popup.menu)
+        when (viewModel.sortState.value.field) {
+            ArtistSortField.NAME -> popup.menu.findItem(R.id.sort_by_name)?.isChecked = true
+            ArtistSortField.DATE_ADDED -> popup.menu.findItem(R.id.sort_by_date_added)?.isChecked = true
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val selected = when (item.itemId) {
+                R.id.sort_by_name -> ArtistSortField.NAME
+                R.id.sort_by_date_added -> ArtistSortField.DATE_ADDED
+                else -> null
+            }
+            selected?.let { field ->
+                if (field != viewModel.sortState.value.field) {
+                    viewModel.onSortFieldSelected(field)
+                    artistsAdapter.refresh()
+                }
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun showSortOrderMenu(anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_song_sort_order, popup.menu)
+        when (viewModel.sortState.value.direction) {
+            SortDirection.ASCENDING -> popup.menu.findItem(R.id.order_ascending)?.isChecked = true
+            SortDirection.DESCENDING -> popup.menu.findItem(R.id.order_descending)?.isChecked = true
+        }
+        popup.setOnMenuItemClickListener { item ->
+            val selected = when (item.itemId) {
+                R.id.order_ascending -> SortDirection.ASCENDING
+                R.id.order_descending -> SortDirection.DESCENDING
+                else -> null
+            }
+            selected?.let { direction ->
+                if (direction != viewModel.sortState.value.direction) {
+                    viewModel.onSortDirectionSelected(direction)
+                    artistsAdapter.refresh()
+                }
+            }
+            true
+        }
+        popup.show()
     }
 }

@@ -6,13 +6,14 @@ import androidx.paging.PagingData
 import com.cesenahome.data.paging.AlbumPagingSource
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.domain.models.Album
+import com.cesenahome.domain.models.AlbumPagingRequest
 import com.cesenahome.domain.repository.AlbumRepository
 import kotlinx.coroutines.flow.Flow
 
 class AlbumRepositoryImpl(
     private val apiClient: JellyfinApiClient
-): AlbumRepository {
-    override fun pagingAlbumsAlphabetical(pageSize: Int, artistId: String?): Flow<PagingData<Album>> {
+) : AlbumRepository {
+    override fun pagingAlbums(pageSize: Int, request: AlbumPagingRequest): Flow<PagingData<Album>> {
         return Pager(
             config = PagingConfig(
                 pageSize = pageSize,
@@ -21,7 +22,7 @@ class AlbumRepositoryImpl(
                 enablePlaceholders = false,
                 maxSize = pageSize * 5
             ),
-            pagingSourceFactory = { AlbumPagingSource(apiClient, pageSize, artistId) }
+            pagingSourceFactory = { AlbumPagingSource(apiClient, pageSize, request) }
         ).flow
     }
 }

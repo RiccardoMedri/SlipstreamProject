@@ -1,9 +1,13 @@
 package com.cesenahome.data.remote
 
 import android.content.Context
-import com.cesenahome.domain.models.User
-import com.cesenahome.domain.models.SongSortField
+import com.cesenahome.domain.models.AlbumPagingRequest
+import com.cesenahome.domain.models.AlbumSortField
+import com.cesenahome.domain.models.ArtistPagingRequest
+import com.cesenahome.domain.models.ArtistSortField
 import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.SongSortField
+import com.cesenahome.domain.models.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.Jellyfin
@@ -112,44 +116,30 @@ class JellyfinApiClient(
         )
         response.items
     }
-    suspend fun fetchAlbumAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+    suspend fun fetchAlbums(startIndex: Int, limit: Int, request: AlbumPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val artistUuid = parseUuidOrNull(request.artistId)
         val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
+            albumArtistIds = artistUuid?.let { listOf(it) },
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-            sortBy = listOf(ItemSortBy.NAME),
-            sortOrder = listOf(SortOrder.ASCENDING),
+            sortBy = listOf(request.sortOption.field.toApiSortBy()),
+            sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
             startIndex = startIndex,
             limit = limit
         )
         response.items
     }
 
-    suspend fun fetchAlbumsByArtistId(artistId: String, startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
-        val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val parsedArtistId = parseUuidOrNull(artistId) ?: error("Invalid artistId")
-        val response by currentApi.itemsApi.getItems(
-            userId = getCurrentUserId(),
-            albumArtistIds = listOf(parsedArtistId),
-            recursive = true,
-            includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-            sortBy = listOf(ItemSortBy.PRODUCTION_YEAR),
-            sortOrder = listOf(SortOrder.DESCENDING),
-            startIndex = startIndex,
-            limit = limit
-        )
-        response.items
-    }
-
-    suspend fun fetchArtistAlphabetical(startIndex: Int, limit: Int): List<BaseItemDto> = withContext(Dispatchers.IO) {
+    suspend fun fetchArtists(startIndex: Int, limit: Int, request: ArtistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.MUSIC_ARTIST),
-            sortBy = listOf(ItemSortBy.NAME),
-            sortOrder = listOf(SortOrder.ASCENDING),
+            sortBy = listOf(request.sortOption.field.toApiSortBy()),
+            sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
             startIndex = startIndex,
             limit = limit
         )
@@ -183,6 +173,17 @@ class JellyfinApiClient(
     private fun SortDirection.toApiSortOrder(): SortOrder = when (this) {
         SortDirection.ASCENDING -> SortOrder.ASCENDING
         SortDirection.DESCENDING -> SortOrder.DESCENDING
+    }
+    private fun AlbumSortField.toApiSortBy(): ItemSortBy = when (this) {
+        AlbumSortField.TITLE -> ItemSortBy.NAME
+        AlbumSortField.ARTIST -> ItemSortBy.ALBUM_ARTIST
+        AlbumSortField.YEAR -> ItemSortBy.PRODUCTION_YEAR
+        AlbumSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
+    }
+
+    private fun ArtistSortField.toApiSortBy(): ItemSortBy = when (this) {
+        ArtistSortField.NAME -> ItemSortBy.NAME
+        ArtistSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
     }
     private suspend fun getCountForKinds(vararg kinds: BaseItemKind): Int = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")

@@ -23,6 +23,7 @@ import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -123,13 +124,13 @@ class SongsActivity : AppCompatActivity() {
             SongSortField.DATE_ADDED -> R.string.songs_sort_by_date_added
         }
         val orderLabelRes = when (direction) {
-            SortDirection.ASCENDING -> R.string.songs_sort_order_ascending
-            SortDirection.DESCENDING -> R.string.songs_sort_order_descending
+            SortDirection.ASCENDING -> R.string.sort_order_ascending
+            SortDirection.DESCENDING -> R.string.sort_order_descending
         }
         binding.songToolbarFilters.buttonSortField.text =
-            getString(R.string.songs_sort_by_label, getString(sortLabelRes))
+            getString(R.string.sort_field_label, getString(sortLabelRes))
         binding.songToolbarFilters.buttonSortOrder.text =
-            getString(R.string.songs_sort_order_label, getString(orderLabelRes))
+            getString(R.string.sort_order_label, getString(orderLabelRes))
         binding.songToolbarFilters.buttonSortField.contentDescription =
             binding.songToolbarFilters.buttonSortField.text
         binding.songToolbarFilters.buttonSortOrder.contentDescription =

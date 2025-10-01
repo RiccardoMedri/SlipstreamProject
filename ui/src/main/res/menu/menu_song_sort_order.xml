@@ -3,9 +3,9 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/order_ascending"
-            android:title="@string/songs_sort_order_ascending" />
+            android:title="@string/sort_order_ascending" />
         <item
             android:id="@+id/order_descending"
-            android:title="@string/songs_sort_order_descending" />
+            android:title="@string/sort_order_descending" />
     </group>
 </menu>

@@ -1,0 +1,15 @@
+package com.cesenahome.domain.models
+
+enum class ArtistSortField {
+    NAME,
+    DATE_ADDED
+}
+
+data class ArtistSortOption(
+    val field: ArtistSortField = ArtistSortField.NAME,
+    val direction: SortDirection = SortDirection.ASCENDING
+)
+
+data class ArtistPagingRequest(
+    val sortOption: ArtistSortOption = ArtistSortOption()
+)

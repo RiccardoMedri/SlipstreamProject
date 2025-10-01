@@ -9,13 +9,21 @@
     <string name="cd_album_art">Album art</string>
     <string name="playback_channel_name">Playback</string>
     <string name="title_songs">Songs</string>
-    <string name="songs_sort_by_default">Sort: Name</string>
-    <string name="songs_sort_order_default">Order: Ascending</string>
+    <string name="title_albums">Albums</string>
+    <string name="title_artists">Artists</string>
+    <string name="sort_field_default">Sort: Name</string>
+    <string name="sort_order_default">Order: Ascending</string>
     <string name="songs_sort_by_name">Name</string>
     <string name="songs_sort_by_album_artist">Album artist</string>
     <string name="songs_sort_by_date_added">Date added</string>
-    <string name="songs_sort_order_ascending">Ascending</string>
-    <string name="songs_sort_order_descending">Descending</string>
-    <string name="songs_sort_by_label">Sort: %1$s</string>
-    <string name="songs_sort_order_label">Order: %1$s</string>
+    <string name="albums_sort_by_title">Title</string>
+    <string name="albums_sort_by_artist">Artist</string>
+    <string name="albums_sort_by_year">Year</string>
+    <string name="albums_sort_by_date_added">Date added</string>
+    <string name="artists_sort_by_name">Name</string>
+    <string name="artists_sort_by_date_added">Date added</string>
+    <string name="sort_order_ascending">Ascending</string>
+    <string name="sort_order_descending">Descending</string>
+    <string name="sort_field_label">Sort: %1$s</string>
+    <string name="sort_order_label">Order: %1$s</string>
 </resources>
