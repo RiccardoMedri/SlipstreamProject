@@ -55,12 +55,16 @@ class SongsActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
-
-        binding.songToolbarFilters.buttonSortField.setOnClickListener { view ->
-            showSortFieldMenu(view)
-        }
-        binding.songToolbarFilters.buttonSortOrder.setOnClickListener { view ->
-            showSortOrderMenu(view)
+        if (albumId == null) {
+            binding.songToolbarFilters.root.isVisible = true
+            binding.songToolbarFilters.buttonSortField.setOnClickListener { view ->
+                showSortFieldMenu(view)
+            }
+            binding.songToolbarFilters.buttonSortOrder.setOnClickListener { view ->
+                showSortOrderMenu(view)
+            }
+        } else {
+            binding.songToolbarFilters.root.isVisible = false
         }
     }
 
