@@ -118,5 +118,50 @@
             android:src="@android:drawable/ic_media_next"
             app:tint="?attr/colorControlNormal" />
     </LinearLayout>
+    <LinearLayout
+        android:id="@+id/playbackModesLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/controlsLayout">
+
+        <ImageButton
+            android:id="@+id/shuffleButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/cd_shuffle_off"
+            android:src="@drawable/ic_shuffle"
+            android:tint="?attr/colorControlNormal"
+            android:alpha="0.4"
+            android:padding="8dp" />
+
+        <ImageButton
+            android:id="@+id/restartButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="@string/cd_restart_track"
+            android:src="@drawable/ic_replay"
+            android:tint="?attr/colorControlNormal"
+            android:padding="8dp" />
+
+        <ImageButton
+            android:id="@+id/repeatButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="@string/cd_repeat_off"
+            android:src="@drawable/ic_repeat"
+            android:tint="?attr/colorControlNormal"
+            android:alpha="0.4"
+            android:padding="8dp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

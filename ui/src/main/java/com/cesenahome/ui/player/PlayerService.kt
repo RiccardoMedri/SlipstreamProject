@@ -4,11 +4,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Build
-import androidx.core.net.toUri 
+import androidx.concurrent.futures.CallbackToFutureAdapter
+import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -20,14 +22,19 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionError
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.Song 
+import com.cesenahome.domain.models.Song
 import com.google.common.collect.ImmutableList
-import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Collections
+import java.util.LinkedHashMap
 
 @UnstableApi
 class PlayerService : MediaLibraryService() {
@@ -35,25 +42,52 @@ class PlayerService : MediaLibraryService() {
     private lateinit var player: ExoPlayer
     private var session: MediaLibrarySession? = null
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
-    private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase } // Correctly initialized
+    private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase }
 
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Main.immediate)
+
+    private val songCache: MutableMap<String, Song> = Collections.synchronizedMap(
+        object : LinkedHashMap<String, Song>(CACHE_SIZE, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Song>?): Boolean {
+                return size > CACHE_SIZE
+            }
+        }
+    )
 
     private val noisyReceiver = object : BroadcastReceiver() {
-        override fun onReceive(c: Context, i: Intent) {
-            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == i.action && player.isPlaying) {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent.action && player.isPlaying) {
                 player.pause()
             }
+        }
+    }
+
+    private val playerListener = object : Player.Listener {
+        override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+            notifyQueueChildrenChanged()
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            notifyQueueChildrenChanged()
         }
     }
 
     override fun onCreate() {
         super.onCreate()
         ensureNotificationChannel()
-        registerReceiver(noisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+        val noisyFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(noisyReceiver, noisyFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(noisyReceiver, noisyFilter)
+        }
 
         player = ExoPlayer.Builder(this)
-            .setSeekBackIncrementMs(10_000)
-            .setSeekForwardIncrementMs(30_000)
+            .setSeekBackIncrementMs(SEEK_BACK_MS)
+            .setSeekForwardIncrementMs(SEEK_FORWARD_MS)
+            .setHandleAudioBecomingNoisy(true)
             .build()
             .apply {
                 setAudioAttributes(
@@ -63,133 +97,17 @@ class PlayerService : MediaLibraryService() {
                         .build(),
                     true
                 )
+                addListener(playerListener)
             }
 
-        val notifProvider = DefaultMediaNotificationProvider.Builder(this)
+        val notificationProvider = DefaultMediaNotificationProvider.Builder(this)
             .setChannelId(CHANNEL_ID)
             .build()
+        setMediaNotificationProvider(notificationProvider)
 
-        setMediaNotificationProvider(notifProvider)
-
-        val callback = object : MediaLibrarySession.Callback {
-
-            override fun onConnect(
-                session: MediaSession,
-                controller: MediaSession.ControllerInfo
-            ): MediaSession.ConnectionResult {
-                val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
-                val playerCommands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS
-                    .buildUpon()
-                    .add(Player.COMMAND_SET_SHUFFLE_MODE)
-                    .add(Player.COMMAND_SET_REPEAT_MODE)
-                    .build()
-
-                return MediaSession.ConnectionResult.accept(
-                    sessionCommands,
-                    playerCommands
-                )
-            }
-
-            override fun onGetLibraryRoot(
-                session: MediaLibrarySession,
-                browser: MediaSession.ControllerInfo,
-                params: LibraryParams?
-            ): ListenableFuture<LibraryResult<MediaItem>> {
-                val rootMediaItem = MediaItem.Builder()
-                    .setMediaId(ROOT_ID)
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle("Slipstream Library")
-                            .setIsBrowsable(true)
-                            .setIsPlayable(false)
-                            .build()
-                    )
-                    .build()
-                return Futures.immediateFuture(LibraryResult.ofItem(rootMediaItem, params))
-            }
-
-            override fun onGetChildren(
-                session: MediaLibrarySession,
-                browser: MediaSession.ControllerInfo,
-                parentId: String,
-                page: Int,
-                pageSize: Int,
-                params: LibraryParams?
-            ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-
-                val mediaItemsFuture: ListenableFuture<ImmutableList<MediaItem>> = 
-                    Futures.submitAsync(
-                        {
-                            val items = runBlocking(Dispatchers.IO) { 
-                                when (parentId) {
-                                    ROOT_ID -> {
-                                        ImmutableList.of(
-                                            browsableNode(NODE_ID_QUEUE, "Current Queue", false),
-                                            browsableNode(NODE_ID_ALL_SONGS, "All Songs", false)
-                                        )
-                                    }
-                                    NODE_ID_QUEUE -> {
-                                        val queueItems = snapshotQueueAsItems()
-                                        paginate(queueItems, page, pageSize)
-                                    }
-                                    NODE_ID_ALL_SONGS -> {
-                                        val songsResult = getSimpleSongsListUseCase(page, pageSize)
-                                        if (songsResult.isSuccess) {
-                                            songsResult.getOrNull()?.map { songToMediaItem(it) }?.let {
-                                                ImmutableList.copyOf(it)
-                                            } ?: ImmutableList.of()
-                                        } else {
-                                            ImmutableList.of()
-                                        }
-                                    }
-                                    else -> ImmutableList.of()
-                                }
-                            }
-                            Futures.immediateFuture(items)
-                        },
-                        MoreExecutors.directExecutor()
-                    )
-
-                return Futures.transform(mediaItemsFuture, 
-                    { items -> LibraryResult.ofItemList(items ?: ImmutableList.of(), params) }, 
-                    MoreExecutors.directExecutor()
-                )
-            }
-
-            override fun onAddMediaItems(
-                mediaSession: MediaSession,
-                controller: MediaSession.ControllerInfo,
-                mediaItems: MutableList<MediaItem>
-            ): ListenableFuture<MutableList<MediaItem>> {
-                val resolved: MutableList<MediaItem> = runBlocking(Dispatchers.IO) {
-                    mediaItems.map { item ->
-                        val id = item.mediaId
-                        val stream = runCatching { resolveStreamUrlUseCase(id) }.getOrNull()
-                        if (stream.isNullOrBlank()) {
-                            item
-                        } else {
-                            item.buildUpon()
-                                .setUri(stream)
-                                .build()
-                        }
-                    }.toMutableList()
-                }
-                return Futures.immediateFuture(resolved)
-            }
-            
-            override fun onPlaybackResumption(
-                mediaSession: MediaSession,
-                controller: MediaSession.ControllerInfo
-            ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
-                if (player.mediaItemCount > 0) {
-                    if (player.playbackState == Player.STATE_IDLE) player.prepare()
-                    player.playWhenReady = true
-                }
-                return super.onPlaybackResumption(mediaSession, controller)
-            }
-        }
-
-        session = MediaLibrarySession.Builder(this, player, callback).build()
+        session = MediaLibrarySession.Builder(this, player, LibraryCallback())
+            .setId(SESSION_ID)
+            .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
@@ -203,15 +121,17 @@ class PlayerService : MediaLibraryService() {
 
     override fun onDestroy() {
         unregisterReceiver(noisyReceiver)
+        player.removeListener(playerListener)
         session?.release()
         player.release()
+        serviceScope.cancel()
         super.onDestroy()
     }
 
     private fun ensureNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= 26) {
-            val nm = getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL_ID,
                     "Playback",
@@ -221,56 +141,262 @@ class PlayerService : MediaLibraryService() {
         }
     }
 
-    private fun browsableNode(id: String, title: String, playable: Boolean): MediaItem {
-        return MediaItem.Builder()
-            .setMediaId(id)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setIsBrowsable(true)
-                    .setIsPlayable(playable)
-                    .build()
-            )
-            .build()
-    }
-    
-    private fun songToMediaItem(song: Song): MediaItem {
-        val metadataBuilder = MediaMetadata.Builder()
-            .setTitle(song.title)
-            .setArtist(song.artist)
-            .setAlbumTitle(song.album)
-            .setIsPlayable(true) // Songs are playable
-            .setIsBrowsable(false) // Individual songs are typically not browsable folders
-        song.artworkUrl?.let { metadataBuilder.setArtworkUri(it.toUri()) }
-        // You could also set MediaMetadata.Builder#setFolderType(MediaMetadata.FOLDER_TYPE_NONE)
-
-        return MediaItem.Builder()
-            .setMediaId(song.id)
-            .setMediaMetadata(metadataBuilder.build())
-            .build()
-    }
-
-    private fun snapshotQueueAsItems(): List<MediaItem> {
-        if (player.mediaItemCount <= 0) return emptyList()
-        val list = ArrayList<MediaItem>(player.mediaItemCount)
-        for (i in 0 until player.mediaItemCount) {
-            list.add(player.getMediaItemAt(i))
+    private fun notifyQueueChildrenChanged() {
+        val itemCount = player.mediaItemCount
+        val librarySession = session ?: return
+        serviceScope.launch {
+            librarySession.notifyChildrenChanged(NODE_ID_QUEUE, itemCount, null)
         }
-        return list
     }
+
+    private fun libraryRootItem(): MediaItem = MediaItem.Builder()
+        .setMediaId(ROOT_ID)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle("Slipstream Library")
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .build()
+        )
+        .build()
+
+    private fun browsableNode(id: String, title: String): MediaItem = MediaItem.Builder()
+        .setMediaId(id)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(title)
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .build()
+        )
+        .build()
+
+    private fun queueSnapshot(): List<MediaItem> {
+        if (player.mediaItemCount == 0) return emptyList()
+        val items = ArrayList<MediaItem>(player.mediaItemCount)
+        for (index in 0 until player.mediaItemCount) {
+            items += player.getMediaItemAt(index)
+        }
+        return items
+    }
+
+    private fun queueMediaItems(page: Int, pageSize: Int): ImmutableList<MediaItem> {
+        val snapshot = queueSnapshot()
+        return paginate(snapshot, page, pageSize)
+    }
+
+    private suspend fun loadLibraryPage(page: Int, pageSize: Int): ImmutableList<MediaItem> {
+        val safePage = page.coerceAtLeast(0)
+        val boundedPageSize = pageSize
+            .takeUnless { it == Int.MAX_VALUE }
+            ?.coerceAtLeast(1)
+            ?.coerceAtMost(MAX_LIBRARY_PAGE_SIZE)
+            ?: DEFAULT_LIBRARY_PAGE_SIZE
+
+        val songs = runCatching { getSimpleSongsListUseCase(safePage, boundedPageSize) }.getOrNull()
+            ?.getOrNull().orEmpty()
+        cacheSongs(songs)
+        return ImmutableList.copyOf(songs.map { it.toMediaItem() })
+    }
+
+    private suspend fun resolveMediaItems(mediaItems: List<MediaItem>): MutableList<MediaItem> {
+        if (mediaItems.isEmpty()) return mutableListOf()
+        return withContext(Dispatchers.IO) {
+            val resolved = ArrayList<MediaItem>(mediaItems.size)
+            for (item in mediaItems) {
+                val builder = item.buildUpon()
+                val song = songCache[item.mediaId]
+                if (song != null) {
+                    builder.setMediaMetadata(song.toMediaMetadata())
+                }
+                val uri = runCatching { resolveStreamUrlUseCase(item.mediaId) }.getOrNull()
+                if (!uri.isNullOrBlank()) {
+                    builder.setUri(uri)
+                }
+                resolved += builder.build()
+            }
+            resolved
+        }
+    }
+
+    private suspend fun findItem(mediaId: String): MediaItem? {
+        for (index in 0 until player.mediaItemCount) {
+            val existing = player.getMediaItemAt(index)
+            if (existing.mediaId == mediaId) {
+                return existing
+            }
+        }
+        val cachedSong = songCache[mediaId]
+        if (cachedSong != null) {
+            return cachedSong.toMediaItem()
+        }
+        val uri = withContext(Dispatchers.IO) {
+            runCatching { resolveStreamUrlUseCase(mediaId) }.getOrNull()
+        }
+        if (uri != null) {
+            return MediaItem.Builder()
+                .setMediaId(mediaId)
+                .setUri(uri)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle("Unknown track")
+                        .setIsBrowsable(false)
+                        .setIsPlayable(true)
+                        .build()
+                )
+                .build()
+        }
+        return null
+    }
+
+    private fun cacheSongs(songs: List<Song>) {
+        if (songs.isEmpty()) return
+        synchronized(songCache) {
+            songs.forEach { song -> songCache[song.id] = song }
+        }
+    }
+
+    private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
+        .setMediaId(id)
+        .setMediaMetadata(toMediaMetadata())
+        .build()
+
+    private fun Song.toMediaMetadata(): MediaMetadata = MediaMetadata.Builder()
+        .setTitle(title)
+        .setArtist(artist)
+        .setAlbumTitle(album)
+        .setArtworkUri(artworkUrl?.toUri())
+        .setIsBrowsable(false)
+        .setIsPlayable(true)
+        .build()
 
     private fun paginate(items: List<MediaItem>, page: Int, pageSize: Int): ImmutableList<MediaItem> {
-        if (items.isEmpty() || pageSize <= 0) return ImmutableList.copyOf(items)
-        val start = page.coerceAtLeast(0) * pageSize
-        if (start >= items.size) return ImmutableList.of()
-        val endExclusive = (start + pageSize).coerceAtMost(items.size)
-        return ImmutableList.copyOf(items.subList(start, endExclusive))
+        if (items.isEmpty()) return ImmutableList.of()
+        val effectivePageSize = when {
+            pageSize == Int.MAX_VALUE || pageSize <= 0 -> items.size
+            else -> pageSize
+        }
+        val safePage = page.coerceAtLeast(0)
+        val startIndex = safePage * effectivePageSize
+        if (startIndex >= items.size) return ImmutableList.of()
+        val endIndex = (startIndex + effectivePageSize).coerceAtMost(items.size)
+        return ImmutableList.copyOf(items.subList(startIndex, endIndex))
+    }
+
+    private inner class LibraryCallback : MediaLibrarySession.Callback {
+
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
+            val playerCommands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS
+                .buildUpon()
+                .add(Player.COMMAND_SET_SHUFFLE_MODE)
+                .add(Player.COMMAND_SET_REPEAT_MODE)
+                .add(Player.COMMAND_SEEK_TO_MEDIA_ITEM)
+                .build()
+            return MediaSession.ConnectionResult.accept(sessionCommands, playerCommands)
+        }
+
+        override fun onGetLibraryRoot(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            return serviceFuture {
+                LibraryResult.ofItem(libraryRootItem(), params)
+            }
+        }
+
+        override fun onGetChildren(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            parentId: String,
+            page: Int,
+            pageSize: Int,
+            params: LibraryParams?
+        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
+            return serviceFuture {
+                when (parentId) {
+                    ROOT_ID -> {
+                        val children = ImmutableList.of(
+                            browsableNode(NODE_ID_QUEUE, "Current Queue"),
+                            browsableNode(NODE_ID_ALL_SONGS, "All Songs")
+                        )
+                        LibraryResult.ofItemList(children, params)
+                    }
+                    NODE_ID_QUEUE -> LibraryResult.ofItemList(queueMediaItems(page, pageSize), params)
+                    NODE_ID_ALL_SONGS -> LibraryResult.ofItemList(loadLibraryPage(page, pageSize), params)
+                    else -> LibraryResult.ofError(SessionError.ERROR_UNKNOWN)
+                }
+            }
+        }
+
+        override fun onGetItem(
+            session: MediaLibrarySession,
+            browser: MediaSession.ControllerInfo,
+            mediaId: String
+        ): ListenableFuture<LibraryResult<MediaItem>> {
+            return serviceFuture {
+                val item = findItem(mediaId)
+                if (item != null) {
+                    LibraryResult.ofItem(item, null)
+                } else {
+                    LibraryResult.ofError(SessionError.ERROR_UNKNOWN)
+                }
+            }
+        }
+
+        override fun onAddMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>
+        ): ListenableFuture<MutableList<MediaItem>> {
+            return serviceFuture { resolveMediaItems(mediaItems) }
+        }
+
+        override fun onSetMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            return serviceFuture {
+                val resolved = resolveMediaItems(mediaItems)
+                MediaSession.MediaItemsWithStartPosition(resolved, startIndex, startPositionMs)
+            }
+        }
+    }
+
+    private fun <T> serviceFuture(block: suspend () -> T): ListenableFuture<T> {
+        return CallbackToFutureAdapter.getFuture { completer ->
+            serviceScope.launch {
+                try {
+                    completer.set(block())
+                } catch (error: Throwable) {
+                    if (error is kotlinx.coroutines.CancellationException) {
+                        completer.setCancelled()
+                    } else {
+                        completer.setException(error)
+                    }
+                }
+            }
+            "PlayerService#serviceFuture"
+        }
     }
 
     companion object {
         private const val CHANNEL_ID = "playback"
+        private const val SESSION_ID = "slipstream_session"
         private const val ROOT_ID = "root_id"
         private const val NODE_ID_QUEUE = "node_id_queue"
         private const val NODE_ID_ALL_SONGS = "node_id_all_songs"
+        private const val DEFAULT_LIBRARY_PAGE_SIZE = 50
+        private const val MAX_LIBRARY_PAGE_SIZE = 200
+        private const val CACHE_SIZE = 250
+        private const val SEEK_BACK_MS = 10_000L
+        private const val SEEK_FORWARD_MS = 30_000L
     }
 }

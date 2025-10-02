@@ -12,6 +12,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.bumptech.glide.Glide
+import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivityPlayerBinding
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -26,6 +27,18 @@ class PlayerActivity : AppCompatActivity() {
     private val mediaController: MediaController? get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
     private var currentSongId: String? = null
     private var isSeeking = false
+    private val progressUpdater = object : Runnable {
+        override fun run() {
+            mediaController?.let {
+                if (it.isConnected && !isSeeking) {
+                    updateProgress(it.currentPosition, it.duration)
+                }
+            }
+            if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                binding.root.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS)
+            }
+        }
+    }
 
     companion object {
         const val EXTRA_SONG_ID = "extra_song_id"
@@ -34,6 +47,8 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_SONG_ALBUM = "extra_song_album"
         const val EXTRA_SONG_ARTWORK_URL = "extra_song_artwork_url"
         const val EXTRA_SONG_DURATION_MS = "extra_song_duration_ms"
+        private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
+        private const val BUTTON_DISABLED_ALPHA = 0.4f
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +93,8 @@ class PlayerActivity : AppCompatActivity() {
                     updatePlayPauseButton(controller.isPlaying)
                     updateProgress(controller.currentPosition, controller.duration)
                 }
+                updateShuffleButton(controller.shuffleModeEnabled)
+                updateRepeatButton(controller.repeatMode)
             },
             MoreExecutors.directExecutor()
         )
@@ -85,9 +102,10 @@ class PlayerActivity : AppCompatActivity() {
 
 
     override fun onStop() {
-        super.onStop()
         mediaController?.removeListener(playerListener)
+        mediaControllerFuture?.let { MediaController.releaseFuture(it) }
         mediaControllerFuture = null
+        super.onStop()
     }
 
     private fun playNewSongFromIntent(controller: MediaController) {
@@ -126,6 +144,26 @@ class PlayerActivity : AppCompatActivity() {
         }
         binding.nextButton.setOnClickListener { mediaController?.seekToNextMediaItem() }
         binding.previousButton.setOnClickListener { mediaController?.seekToPreviousMediaItem() }
+        binding.restartButton.setOnClickListener {
+            mediaController?.let {
+                it.seekToDefaultPosition()
+                it.play()
+            }
+        }
+        binding.shuffleButton.setOnClickListener {
+            mediaController?.let {
+                val enabled = !it.shuffleModeEnabled
+                it.shuffleModeEnabled = enabled
+                updateShuffleButton(enabled)
+            }
+        }
+        binding.repeatButton.setOnClickListener {
+            mediaController?.let {
+                val nextMode = nextRepeatMode(it.repeatMode)
+                it.repeatMode = nextMode
+                updateRepeatButton(nextMode)
+            }
+        }
 
         binding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -166,6 +204,14 @@ class PlayerActivity : AppCompatActivity() {
             updateProgress(mediaController?.currentPosition ?: 0, mediaController?.duration ?: 0)
         }
 
+        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            updateShuffleButton(shuffleModeEnabled)
+        }
+
+        override fun onRepeatModeChanged(repeatMode: Int) {
+            updateRepeatButton(repeatMode)
+        }
+
         override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
             // Called when player jumps to a new item or position (e.g. seekToNext, seekToPrevious, seekTo)
             updateProgress(newPosition.positionMs, mediaController?.duration ?: 0)
@@ -198,6 +244,10 @@ class PlayerActivity : AppCompatActivity() {
                     .into(binding.artworkImageView)
                 binding.totalDurationTextView.text = formatDuration(mediaController?.duration ?: 0)
                 binding.seekBar.max = (mediaController?.duration ?: 0).toInt().coerceAtLeast(0)
+                mediaController?.let {
+                    updateShuffleButton(it.shuffleModeEnabled)
+                    updateRepeatButton(it.repeatMode)
+                }
             }
         } else {
             // Clear UI if no media item (e.g., queue ended)
@@ -212,6 +262,13 @@ class PlayerActivity : AppCompatActivity() {
         binding.nextButton.isEnabled = hasMediaItem
         binding.playPauseButton.isEnabled = hasMediaItem
         binding.seekBar.isEnabled = hasMediaItem
+        binding.restartButton.isEnabled = hasMediaItem
+        binding.shuffleButton.isEnabled = hasMediaItem
+        binding.repeatButton.isEnabled = hasMediaItem
+        if (!hasMediaItem) {
+            updateShuffleButton(false)
+            updateRepeatButton(Player.REPEAT_MODE_OFF)
+        }
     }
 
     private fun formatDuration(durationMs: Long): String {
@@ -225,17 +282,36 @@ class PlayerActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // Periodic UI updates for progress bar, especially if player was active in background
-        binding.root.post(object : Runnable {
-            override fun run() {
-                mediaController?.let {
-                    if (it.isConnected && !isSeeking) {
-                        updateProgress(it.currentPosition, it.duration)
-                    }
-                }
-                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                    binding.root.postDelayed(this, 500) // Update roughly twice a second
-                }
-            }
-        })
+        binding.root.post(progressUpdater)
+    }
+
+    override fun onPause() {
+        binding.root.removeCallbacks(progressUpdater)
+        super.onPause()
+    }
+
+    private fun updateShuffleButton(enabled: Boolean) {
+        binding.shuffleButton.setImageResource(R.drawable.ic_shuffle)
+        binding.shuffleButton.alpha = if (enabled) 1f else BUTTON_DISABLED_ALPHA
+        binding.shuffleButton.contentDescription = getString(
+            if (enabled) R.string.cd_shuffle_on else R.string.cd_shuffle_off
+        )
+    }
+
+    private fun updateRepeatButton(repeatMode: Int) {
+        val (icon, description, alpha) = when (repeatMode) {
+            Player.REPEAT_MODE_ONE -> Triple(R.drawable.ic_repeat_one, R.string.cd_repeat_one, 1f)
+            Player.REPEAT_MODE_ALL -> Triple(R.drawable.ic_repeat, R.string.cd_repeat_all, 1f)
+            else -> Triple(R.drawable.ic_repeat, R.string.cd_repeat_off, BUTTON_DISABLED_ALPHA)
+        }
+        binding.repeatButton.setImageResource(icon)
+        binding.repeatButton.alpha = alpha
+        binding.repeatButton.contentDescription = getString(description)
+    }
+
+    private fun nextRepeatMode(currentMode: Int): Int = when (currentMode) {
+        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+        Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+        else -> Player.REPEAT_MODE_OFF
     }
 }

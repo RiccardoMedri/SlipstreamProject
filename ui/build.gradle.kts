@@ -47,7 +47,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(project(path = ":domain"))
-    //potential handle this via viewholder or gateways
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
     implementation("androidx.fragment:fragment-ktx:1.8.4")
     implementation("com.github.bumptech.glide:glide:5.0.4")
     implementation("androidx.cardview:cardview:1.0.0")
