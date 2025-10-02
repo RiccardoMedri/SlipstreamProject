@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -14,6 +16,7 @@ import androidx.media3.session.SessionToken
 import com.bumptech.glide.Glide
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivityPlayerBinding
+import com.cesenahome.domain.models.QueueSong
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import java.util.Formatter
@@ -34,12 +37,11 @@ class PlayerActivity : AppCompatActivity() {
                     updateProgress(it.currentPosition, it.duration)
                 }
             }
-            if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 binding.root.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS)
             }
         }
     }
-
     companion object {
         const val EXTRA_SONG_ID = "extra_song_id"
         const val EXTRA_SONG_TITLE = "extra_song_title"
@@ -47,6 +49,8 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_SONG_ALBUM = "extra_song_album"
         const val EXTRA_SONG_ARTWORK_URL = "extra_song_artwork_url"
         const val EXTRA_SONG_DURATION_MS = "extra_song_duration_ms"
+        const val EXTRA_QUEUE_SONGS = "extra_queue_songs"
+        const val EXTRA_QUEUE_SELECTED_INDEX = "extra_queue_selected_index"
         private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
         private const val BUTTON_DISABLED_ALPHA = 0.4f
     }
@@ -60,7 +64,7 @@ class PlayerActivity : AppCompatActivity() {
         currentSongId = intent.getStringExtra(EXTRA_SONG_ID)
         val title = intent.getStringExtra(EXTRA_SONG_TITLE)
         val artist = intent.getStringExtra(EXTRA_SONG_ARTIST)
-        // val album = intent.getStringExtra(EXTRA_SONG_ALBUM) // Not used in current layout, but good to have
+        val album = intent.getStringExtra(EXTRA_SONG_ALBUM)
         val artworkUrl = intent.getStringExtra(EXTRA_SONG_ARTWORK_URL)
         val durationMs = intent.getLongExtra(EXTRA_SONG_DURATION_MS, 0)
 
@@ -100,7 +104,6 @@ class PlayerActivity : AppCompatActivity() {
         )
     }
 
-
     override fun onStop() {
         mediaController?.removeListener(playerListener)
         mediaControllerFuture?.let { MediaController.releaseFuture(it) }
@@ -127,11 +130,20 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaMetadata(metadata)
             .build()
 
-        controller.setMediaItem(mediaItem)
+        val queueSongs = intent.getParcelableArrayListExtra<QueueSong>(EXTRA_QUEUE_SONGS)
+        if (!queueSongs.isNullOrEmpty()) {
+            val mediaItems = queueSongs.map { it.toMediaItem() }
+            val startIndex = queueSongs.indexOfFirst { it.id == songId }
+                .takeIf { it >= 0 }
+                ?: intent.getIntExtra(EXTRA_QUEUE_SELECTED_INDEX, 0)
+                    .coerceIn(0, mediaItems.lastIndex)
+            controller.setMediaItems(mediaItems, startIndex, C.TIME_UNSET)
+        } else {
+            controller.setMediaItem(mediaItem)
+        }
         controller.prepare()
         controller.play()
     }
-
     private fun setupClickListeners() {
         binding.playPauseButton.setOnClickListener {
             mediaController?.let {
@@ -258,8 +270,6 @@ class PlayerActivity : AppCompatActivity() {
             binding.seekBar.progress = 0
             binding.seekBar.max = 0
         }
-        binding.previousButton.isEnabled = hasMediaItem
-        binding.nextButton.isEnabled = hasMediaItem
         binding.playPauseButton.isEnabled = hasMediaItem
         binding.seekBar.isEnabled = hasMediaItem
         binding.restartButton.isEnabled = hasMediaItem
@@ -269,6 +279,11 @@ class PlayerActivity : AppCompatActivity() {
             updateShuffleButton(false)
             updateRepeatButton(Player.REPEAT_MODE_OFF)
         }
+        val controller = mediaController
+        binding.previousButton.alpha = if (controller?.hasPreviousMediaItem() == true) 1f else BUTTON_DISABLED_ALPHA
+        binding.nextButton.alpha = if (controller?.hasNextMediaItem() == true) 1f else BUTTON_DISABLED_ALPHA
+        binding.previousButton.isEnabled = controller?.hasPreviousMediaItem() == true
+        binding.nextButton.isEnabled = controller?.hasNextMediaItem() == true
     }
 
     private fun formatDuration(durationMs: Long): String {
@@ -297,7 +312,6 @@ class PlayerActivity : AppCompatActivity() {
             if (enabled) R.string.cd_shuffle_on else R.string.cd_shuffle_off
         )
     }
-
     private fun updateRepeatButton(repeatMode: Int) {
         val (icon, description, alpha) = when (repeatMode) {
             Player.REPEAT_MODE_ONE -> Triple(R.drawable.ic_repeat_one, R.string.cd_repeat_one, 1f)
@@ -308,7 +322,6 @@ class PlayerActivity : AppCompatActivity() {
         binding.repeatButton.alpha = alpha
         binding.repeatButton.contentDescription = getString(description)
     }
-
     private fun nextRepeatMode(currentMode: Int): Int = when (currentMode) {
         Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
         Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE

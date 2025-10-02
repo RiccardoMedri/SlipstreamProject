@@ -17,6 +17,7 @@ import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
+import com.cesenahome.domain.models.QueueSong
 import com.cesenahome.domain.models.Song
 import com.cesenahome.domain.models.SongSortField
 import com.cesenahome.domain.models.SortDirection
@@ -196,6 +197,12 @@ class SongsActivity : AppCompatActivity() {
 
     @OptIn(UnstableApi::class)
     private fun launchPlayerActivity(song: Song) {
+        val snapshotSongs = adapter.snapshot().items
+        val queueSongs = ArrayList<QueueSong>(snapshotSongs.size)
+        snapshotSongs.forEach { snapshotSong ->
+            queueSongs += snapshotSong.toQueueSong()
+        }
+        val selectedIndex = queueSongs.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_SONG_ID, song.id)
             putExtra(PlayerActivity.EXTRA_SONG_TITLE, song.title)
@@ -203,9 +210,22 @@ class SongsActivity : AppCompatActivity() {
             putExtra(PlayerActivity.EXTRA_SONG_ALBUM, song.album)
             putExtra(PlayerActivity.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
             putExtra(PlayerActivity.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
+            if (queueSongs.isNotEmpty()) {
+                putParcelableArrayListExtra(PlayerActivity.EXTRA_QUEUE_SONGS, queueSongs)
+                putExtra(PlayerActivity.EXTRA_QUEUE_SELECTED_INDEX, selectedIndex)
+            }
         }
         startActivity(intent)
     }
+
+    private fun Song.toQueueSong(): QueueSong = QueueSong(
+        id = id,
+        title = title,
+        artist = artist,
+        album = album,
+        durationMs = durationMs,
+        artworkUrl = artworkUrl
+    )
 
     override fun onDestroy() {
         super.onDestroy()

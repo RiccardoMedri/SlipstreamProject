@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
@@ -16,6 +15,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.DefaultMediaNotificationProvider
@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Collections
 import java.util.LinkedHashMap
+import kotlin.coroutines.cancellation.CancellationException
 
 @UnstableApi
 class PlayerService : MediaLibraryService() {
@@ -43,18 +44,13 @@ class PlayerService : MediaLibraryService() {
     private var session: MediaLibrarySession? = null
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
     private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase }
-
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Main.immediate)
-
-    private val songCache: MutableMap<String, Song> = Collections.synchronizedMap(
-        object : LinkedHashMap<String, Song>(CACHE_SIZE, 0.75f, true) {
+    private val songCache: MutableMap<String, Song> = Collections.synchronizedMap(object : LinkedHashMap<String, Song>(CACHE_SIZE, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Song>?): Boolean {
                 return size > CACHE_SIZE
             }
-        }
-    )
-
+        })
     private val noisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent.action && player.isPlaying) {
@@ -62,12 +58,10 @@ class PlayerService : MediaLibraryService() {
             }
         }
     }
-
     private val playerListener = object : Player.Listener {
-        override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
             notifyQueueChildrenChanged()
         }
-
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             notifyQueueChildrenChanged()
         }
@@ -376,7 +370,7 @@ class PlayerService : MediaLibraryService() {
                 try {
                     completer.set(block())
                 } catch (error: Throwable) {
-                    if (error is kotlinx.coroutines.CancellationException) {
+                    if (error is CancellationException) {
                         completer.setCancelled()
                     } else {
                         completer.setException(error)
