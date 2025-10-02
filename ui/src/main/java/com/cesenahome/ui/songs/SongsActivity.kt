@@ -21,6 +21,7 @@ import com.cesenahome.domain.models.Song
 import com.cesenahome.domain.models.SongSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
+import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
 import kotlinx.coroutines.flow.collect
@@ -58,6 +59,11 @@ class SongsActivity : AppCompatActivity() {
         }
         if (albumId == null) {
             binding.songToolbarFilters.root.isVisible = true
+            binding.toolbar.setupSearchMenu(
+                queryHint = getString(R.string.search_hint_songs),
+                initialQuery = viewModel.searchQuery.value,
+                onQueryChanged = viewModel::onSearchQueryChanged
+            )
             binding.songToolbarFilters.buttonSortField.setOnClickListener { view ->
                 showSortFieldMenu(view)
             }
@@ -66,6 +72,7 @@ class SongsActivity : AppCompatActivity() {
             }
         } else {
             binding.songToolbarFilters.root.isVisible = false
+            binding.toolbar.menu.clear()
         }
     }
 

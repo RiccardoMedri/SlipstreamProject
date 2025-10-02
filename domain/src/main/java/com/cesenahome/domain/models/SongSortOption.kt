@@ -18,5 +18,6 @@ data class SongSortOption(
 
 data class SongPagingRequest(
     val albumId: String? = null,
-    val sortOption: SongSortOption = SongSortOption()
+    val sortOption: SongSortOption = SongSortOption(),
+    val searchQuery: String? = null,
 )

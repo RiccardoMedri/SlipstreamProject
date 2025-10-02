@@ -8,8 +8,6 @@ import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toSong
 import com.cesenahome.domain.models.Song
 import com.cesenahome.domain.models.SongPagingRequest
-import com.cesenahome.domain.models.SongSortField
-import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.domain.repository.SongRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -39,9 +37,7 @@ class SongRepositoryImpl(
             val dtoList = jellyfinApiClient.fetchSongs(
                 startIndex = startIndex,
                 limit = pageSize,
-                sortField = SongSortField.NAME,
-                sortDirection = SortDirection.ASCENDING,
-                albumId = null
+                request = SongPagingRequest()
             )
             val songList = dtoList.map { it.toSong(jellyfinApiClient) }
             Result.success(songList)

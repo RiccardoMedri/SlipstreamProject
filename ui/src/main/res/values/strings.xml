@@ -26,4 +26,8 @@
     <string name="sort_order_descending">Descending</string>
     <string name="sort_field_label">Sort: %1$s</string>
     <string name="sort_order_label">Order: %1$s</string>
+    <string name="action_search">Search</string>
+    <string name="search_hint_artists">Search artists</string>
+    <string name="search_hint_albums">Search albums or artists</string>
+    <string name="search_hint_songs">Search songs or album artists</string>
 </resources>

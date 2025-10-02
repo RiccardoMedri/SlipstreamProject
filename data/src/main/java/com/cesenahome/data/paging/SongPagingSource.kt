@@ -21,9 +21,7 @@ class SongPagingSource(
             val page = api.fetchSongs(
                 startIndex = startIndex,
                 limit = limit,
-                sortField = request.sortOption.field,
-                sortDirection = request.sortOption.direction,
-                albumId = request.albumId
+                request = request
             )
 
             val data = page.map { it.toSong(api) }

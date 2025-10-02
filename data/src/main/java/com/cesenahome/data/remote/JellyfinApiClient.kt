@@ -6,6 +6,7 @@ import com.cesenahome.domain.models.AlbumSortField
 import com.cesenahome.domain.models.ArtistPagingRequest
 import com.cesenahome.domain.models.ArtistSortField
 import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.SongPagingRequest
 import com.cesenahome.domain.models.SongSortField
 import com.cesenahome.domain.models.User
 import kotlinx.coroutines.Dispatchers
@@ -100,19 +101,20 @@ class JellyfinApiClient(
             static = true
         )
     }
-    suspend fun fetchSongs(startIndex: Int, limit: Int, sortField: SongSortField, sortDirection: SortDirection, albumId: String?
+    suspend fun fetchSongs(startIndex: Int, limit: Int, request: SongPagingRequest
     ): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val parentUuid = parseUuidOrNull(albumId)
+        val parentUuid = parseUuidOrNull(request.albumId)
         val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
             parentId = parentUuid,
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.AUDIO),
-            sortBy = buildSongSortBy(sortField, parentUuid != null),
-            sortOrder = listOf(sortDirection.toApiSortOrder()),
+            sortBy = buildSongSortBy(request.sortOption.field, parentUuid != null),
+            sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
             startIndex = startIndex,
-            limit = limit
+            limit = limit,
+            searchTerm = request.searchQuery.takeIfNotBlank()
         )
         response.items
     }
@@ -127,7 +129,8 @@ class JellyfinApiClient(
             sortBy = listOf(request.sortOption.field.toApiSortBy()),
             sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
             startIndex = startIndex,
-            limit = limit
+            limit = limit,
+            searchTerm = request.searchQuery.takeIfNotBlank()
         )
         response.items
     }
@@ -141,7 +144,8 @@ class JellyfinApiClient(
             sortBy = listOf(request.sortOption.field.toApiSortBy()),
             sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
             startIndex = startIndex,
-            limit = limit
+            limit = limit,
+            searchTerm = request.searchQuery.takeIfNotBlank()
         )
         response.items
     }
@@ -185,6 +189,7 @@ class JellyfinApiClient(
         ArtistSortField.NAME -> ItemSortBy.NAME
         ArtistSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
     }
+    private fun String?.takeIfNotBlank(): String? = this?.takeIf { it.isNotBlank() }
     private suspend fun getCountForKinds(vararg kinds: BaseItemKind): Int = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         val response by currentApi.itemsApi.getItems(

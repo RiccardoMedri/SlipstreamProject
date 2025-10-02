@@ -17,6 +17,7 @@ import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.AlbumSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
+import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivityAlbumBinding
 import com.cesenahome.ui.songs.SongsActivity
 import kotlinx.coroutines.flow.collect
@@ -52,6 +53,15 @@ class AlbumActivity : AppCompatActivity() {
     private fun setupToolbar() {
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
+        }
+        if (artistId == null) {
+            binding.toolbar.setupSearchMenu(
+                queryHint = getString(R.string.search_hint_albums),
+                initialQuery = viewModel.searchQuery.value,
+                onQueryChanged = viewModel::onSearchQueryChanged
+            )
+        } else {
+            binding.toolbar.menu.clear()
         }
         binding.albumToolbarFilters.buttonSortField.setOnClickListener { view ->
             showSortFieldMenu(view)

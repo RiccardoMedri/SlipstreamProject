@@ -11,5 +11,6 @@ data class ArtistSortOption(
 )
 
 data class ArtistPagingRequest(
-    val sortOption: ArtistSortOption = ArtistSortOption()
+    val sortOption: ArtistSortOption = ArtistSortOption(),
+    val searchQuery: String? = null,
 )

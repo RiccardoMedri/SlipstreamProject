@@ -18,6 +18,7 @@ import com.cesenahome.domain.models.ArtistSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.album.AlbumActivity
+import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivityArtistBinding
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -48,6 +49,11 @@ class ArtistActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
+        binding.toolbar.setupSearchMenu(
+            queryHint = getString(R.string.search_hint_artists),
+            initialQuery = viewModel.searchQuery.value,
+            onQueryChanged = viewModel::onSearchQueryChanged
+        )
         binding.artistToolbarFilters.buttonSortField.setOnClickListener { view ->
             showSortFieldMenu(view)
         }

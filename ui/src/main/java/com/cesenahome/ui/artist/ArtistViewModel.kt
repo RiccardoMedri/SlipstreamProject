@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 
@@ -22,13 +23,18 @@ class ArtistViewModel(
 ): ViewModel() {
 
     private val sortOptionState = MutableStateFlow(ArtistSortOption())
+    private val searchQueryState = MutableStateFlow("")
     val sortState: StateFlow<ArtistSortOption> = sortOptionState.asStateFlow()
+    val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
-    val pagedArtists: Flow<PagingData<Artist>> = sortOptionState
-        .flatMapLatest { sortOption ->
+    val pagedArtists: Flow<PagingData<Artist>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
+        sortOption to query
+    }
+        .flatMapLatest { (sortOption, query) ->
             getPagedArtistsUseCase(
                 ArtistPagingRequest(
-                    sortOption = sortOption
+                    sortOption = sortOption,
+                    searchQuery = query.takeIf { it.isNotBlank() }
                 )
             )
         }
@@ -43,6 +49,12 @@ class ArtistViewModel(
     fun onSortDirectionSelected(direction: SortDirection) {
         sortOptionState.update { current ->
             if (current.direction == direction) current else current.copy(direction = direction)
+        }
+    }
+    fun onSearchQueryChanged(query: String) {
+        searchQueryState.update { current ->
+            val newQuery = query
+            if (current == newQuery) current else newQuery
         }
     }
 }

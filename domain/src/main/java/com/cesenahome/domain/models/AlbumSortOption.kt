@@ -14,5 +14,6 @@ data class AlbumSortOption(
 
 data class AlbumPagingRequest(
     val artistId: String? = null,
-    val sortOption: AlbumSortOption = AlbumSortOption()
+    val sortOption: AlbumSortOption = AlbumSortOption(),
+    val searchQuery: String? = null,
 )

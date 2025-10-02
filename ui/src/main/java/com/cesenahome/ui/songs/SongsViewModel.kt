@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,14 +27,19 @@ class SongsViewModel(
 ) : ViewModel() {
 
     private val sortOptionState = MutableStateFlow(SongSortOption())
+    private val searchQueryState = MutableStateFlow("")
     val sortState: StateFlow<SongSortOption> = sortOptionState.asStateFlow()
+    val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
-    val pagedSongs: Flow<PagingData<Song>> = sortOptionState
-        .flatMapLatest { sortOption ->
+    val pagedSongs: Flow<PagingData<Song>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
+        sortOption to query
+    }
+        .flatMapLatest { (sortOption, query) ->
             getPagedSongsUseCase(
                 SongPagingRequest(
                     albumId = albumId,
-                    sortOption = sortOption
+                    sortOption = sortOption,
+                    searchQuery = if (albumId == null) query.takeIf { it.isNotBlank() } else null
                 )
             )
         }
@@ -61,6 +67,13 @@ class SongsViewModel(
     fun onSortDirectionSelected(direction: SortDirection) {
         sortOptionState.update { current ->
             if (current.direction == direction) current else current.copy(direction = direction)
+        }
+    }
+    fun onSearchQueryChanged(query: String) {
+        if (albumId != null) return
+        searchQueryState.update { current ->
+            val newQuery = query
+            if (current == newQuery) current else newQuery
         }
     }
 }
