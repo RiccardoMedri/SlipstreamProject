@@ -22,8 +22,7 @@ class LoginActivity : AppCompatActivity() {
         LoginViewModel(
             loginUseCase = UseCaseProvider.loginUseCase,
             getCurrentUserUseCase = UseCaseProvider.getCurrentUserUseCase,
-            logoutUseCase = UseCaseProvider.logoutUseCase,
-            restoreSessionUseCase = UseCaseProvider.restoreSessionUseCase
+            logoutUseCase = UseCaseProvider.logoutUseCase
         )
     }
 

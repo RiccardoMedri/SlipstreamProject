@@ -8,7 +8,6 @@ import com.cesenahome.domain.models.User
 import com.cesenahome.domain.usecases.GetCurrentUserUseCase
 import com.cesenahome.domain.usecases.LoginUseCase
 import com.cesenahome.domain.usecases.LogoutUseCase
-import com.cesenahome.domain.usecases.RestoreSessionUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,8 +26,7 @@ data class LoginScreenState(
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val logoutUseCase: LogoutUseCase,
-    private val restoreSessionUseCase: RestoreSessionUseCase
+    private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
     private val _loginScreenState = MutableStateFlow(LoginScreenState())
@@ -49,8 +47,6 @@ class LoginViewModel(
                 }
             }
         }
-        // Attempt to restore session when ViewModel is created
-        attemptRestoreSession()
     }
 
     fun onServerUrlChanged(url: String) {
@@ -86,22 +82,6 @@ class LoginViewModel(
         }
     }
 
-    private fun attemptRestoreSession() {
-        viewModelScope.launch {
-            _loginScreenState.update { it.copy(isLoading = true, error = null) }
-            when (val result = restoreSessionUseCase()) {
-                is LoginResult.Success -> {
-                    _loginScreenState.update {
-                        it.copy(isLoading = false, user = result.user, error = null)
-                    }
-                }
-                is LoginResult.Error -> {
-                    _loginScreenState.update { it.copy(isLoading = false, error = null) }
-                }
-            }
-        }
-    }
-
     fun logout() {
         viewModelScope.launch {
             logoutUseCase()
@@ -110,25 +90,5 @@ class LoginViewModel(
                 it.copy(serverUrl = "", username = "", password = "", error = null)
             }
         }
-    }
-}
-
-class LoginViewModelFactory(
-    private val loginUseCase: LoginUseCase,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val logoutUseCase: LogoutUseCase,
-    private val restoreSessionUseCase: RestoreSessionUseCase
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return LoginViewModel(
-                loginUseCase,
-                getCurrentUserUseCase,
-                logoutUseCase,
-                restoreSessionUseCase
-            ) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
