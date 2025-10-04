@@ -122,7 +122,9 @@ class PlayerService : MediaLibraryService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (!player.playWhenReady || player.playbackState == Player.STATE_IDLE) {
+        if (player.playWhenReady && player.playbackState != Player.STATE_IDLE) {
+            player.pause()
+        } else {
             stopSelf()
         }
         super.onTaskRemoved(rootIntent)

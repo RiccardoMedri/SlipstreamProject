@@ -18,6 +18,7 @@ import com.cesenahome.domain.models.ArtistSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.album.AlbumActivity
+import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivityArtistBinding
 import kotlinx.coroutines.flow.collect
@@ -28,6 +29,7 @@ class ArtistActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityArtistBinding
     private lateinit var artistsAdapter: ArtistsAdapter
+    private lateinit var nowPlayingFabController: NowPlayingFabController
     private val viewModel: ArtistViewModel by lazy {
         ArtistViewModel(UseCaseProvider.getPagedArtistsUseCase)
     }
@@ -37,6 +39,7 @@ class ArtistActivity : AppCompatActivity() {
         enableEdgeToEdge()
         binding = ActivityArtistBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
 
         setupToolbar()

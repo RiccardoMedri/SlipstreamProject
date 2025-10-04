@@ -45,4 +45,14 @@ android:layout_height="match_parent">
             android:visibility="gone" />
     </FrameLayout>
 
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/nowPlayingFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:text="@string/player_fab_label"
+        android:visibility="gone"
+        app:icon="@drawable/ic_music_note" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

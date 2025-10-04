@@ -25,7 +25,7 @@ import com.cesenahome.ui.R
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
-import kotlinx.coroutines.flow.collect
+import com.cesenahome.ui.common.NowPlayingFabController
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -33,6 +33,7 @@ class SongsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySongsBinding
     private lateinit var adapter: SongsAdapter
+    private lateinit var nowPlayingFabController: NowPlayingFabController
     private val albumId: String? by lazy {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
@@ -48,6 +49,7 @@ class SongsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
         setupToolbar()
         setupList()

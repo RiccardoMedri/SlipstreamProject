@@ -8,6 +8,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.cesenahome.domain.di.UseCaseProvider
+import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.databinding.ActivityHomepageBinding
 import com.cesenahome.domain.models.HomeDestination
 import com.cesenahome.ui.album.AlbumActivity
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 class HomepageActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomepageBinding
+    private lateinit var nowPlayingFabController: NowPlayingFabController
 
     private val viewModel: HomepageViewModel by lazy {
         HomepageViewModel(
@@ -30,6 +32,7 @@ class HomepageActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityHomepageBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
         setupClicks()
         observeVm()

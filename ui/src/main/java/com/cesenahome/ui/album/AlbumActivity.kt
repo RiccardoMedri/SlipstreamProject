@@ -17,10 +17,10 @@ import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.AlbumSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
+import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivityAlbumBinding
 import com.cesenahome.ui.songs.SongsActivity
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -28,6 +28,7 @@ class AlbumActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAlbumBinding
     private lateinit var albumsAdapter: AlbumsAdapter
+    private lateinit var nowPlayingFabController: NowPlayingFabController
     private val artistId: String? by lazy {
         intent.getStringExtra(EXTRA_ARTIST_ID)
     }
@@ -43,6 +44,8 @@ class AlbumActivity : AppCompatActivity() {
         enableEdgeToEdge()
         binding = ActivityAlbumBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
         setupToolbar()
         setupRecyclerView()

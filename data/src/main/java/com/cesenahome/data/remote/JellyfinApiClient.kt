@@ -37,10 +37,8 @@ class JellyfinApiClient(
         context = appContext
         clientInfo = ClientInfo(name = clientName, version = clientVersion)
     }
-
     @Volatile
     private var apiClient: ApiClient? = null
-
     @Volatile
     private var currentUserId: UUID? = null
 
