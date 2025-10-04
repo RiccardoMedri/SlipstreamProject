@@ -2,6 +2,7 @@ package com.cesenahome.ui.common
 
 import android.content.ComponentName
 import android.content.Intent
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -84,12 +85,7 @@ class NowPlayingFabController(
         fab.post {
             val controller = mediaController
             if (controller?.currentMediaItem != null) {
-                val title = controller.currentMediaItem?.mediaMetadata?.title?.toString().orEmpty()
-                val label = if (title.isNotBlank()) {
-                    activity.getString(R.string.player_fab_label, title)
-                } else {
-                    activity.getString(R.string.player_fab_label)
-                }
+                val label = activity.getString(R.string.player_fab_label)
                 fab.text = label
                 fab.contentDescription = label
                 fab.show()

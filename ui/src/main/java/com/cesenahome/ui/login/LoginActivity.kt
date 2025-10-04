@@ -69,8 +69,9 @@ class LoginActivity : AppCompatActivity() {
                     binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
                     binding.btnLogin.isEnabled = !state.isLoading
 
-                    if (state.user != null) {
-                        binding.tvStatus.text = "WELCOME ${state.user.name ?: "User"}!"
+                    val user = state.user
+                    if (user != null) {
+                        binding.tvStatus.text = "WELCOME ${user.name ?: "User"}!"
                         // TODO: Navigate to the main part of your app
                         Handler(Looper.getMainLooper()).postDelayed({
                             val intent = Intent(this@LoginActivity, HomepageActivity::class.java)

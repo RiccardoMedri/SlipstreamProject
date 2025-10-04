@@ -137,14 +137,10 @@ class SongsActivity : AppCompatActivity() {
             SortDirection.ASCENDING -> R.string.sort_order_ascending
             SortDirection.DESCENDING -> R.string.sort_order_descending
         }
-        binding.songToolbarFilters.buttonSortField.text =
-            getString(R.string.sort_field_label, getString(sortLabelRes))
-        binding.songToolbarFilters.buttonSortOrder.text =
-            getString(R.string.sort_order_label, getString(orderLabelRes))
-        binding.songToolbarFilters.buttonSortField.contentDescription =
-            binding.songToolbarFilters.buttonSortField.text
-        binding.songToolbarFilters.buttonSortOrder.contentDescription =
-            binding.songToolbarFilters.buttonSortOrder.text
+        binding.songToolbarFilters.buttonSortField.text = getString(R.string.sort_field_label, getString(sortLabelRes))
+        binding.songToolbarFilters.buttonSortOrder.text = getString(R.string.sort_order_label, getString(orderLabelRes))
+        binding.songToolbarFilters.buttonSortField.contentDescription = binding.songToolbarFilters.buttonSortField.text
+        binding.songToolbarFilters.buttonSortOrder.contentDescription = binding.songToolbarFilters.buttonSortOrder.text
     }
     private fun showSortFieldMenu(anchor: View) {
         val popup = PopupMenu(this, anchor)

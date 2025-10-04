@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cesenahome.domain.models.LoginResult
+import com.cesenahome.domain.models.LoginScreenState
 import com.cesenahome.domain.models.User
 import com.cesenahome.domain.usecases.GetCurrentUserUseCase
 import com.cesenahome.domain.usecases.LoginUseCase
@@ -13,15 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class LoginScreenState(
-    val isLoading: Boolean = false,
-    val user: User? = null,
-    val error: String? = null,
-    val serverUrl: String = "",
-    val username: String = "",
-    val password: String = ""
-)
 
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
