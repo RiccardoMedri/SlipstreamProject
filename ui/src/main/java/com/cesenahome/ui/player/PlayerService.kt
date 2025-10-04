@@ -32,6 +32,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Collections
 import java.util.LinkedHashMap
@@ -44,6 +46,7 @@ class PlayerService : MediaLibraryService() {
     private var session: MediaLibrarySession? = null
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
     private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase }
+    private val getRandomSongUseCase by lazy { UseCaseProvider.getRandomSongUseCase }
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Main.immediate)
     private val songCache: MutableMap<String, Song> = Collections.synchronizedMap(object : LinkedHashMap<String, Song>(CACHE_SIZE, 0.75f, true) {
@@ -58,12 +61,24 @@ class PlayerService : MediaLibraryService() {
             }
         }
     }
+    private val shuffleBufferMutex = Mutex()
     private val playerListener = object : Player.Listener {
         override fun onTimelineChanged(timeline: Timeline, reason: Int) {
             notifyQueueChildrenChanged()
+            if (player.shuffleModeEnabled) {
+                serviceScope.launch { maintainShuffleQueue() }
+            }
         }
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             notifyQueueChildrenChanged()
+            if (player.shuffleModeEnabled) {
+                serviceScope.launch { maintainShuffleQueue() }
+            }
+        }
+        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            if (shuffleModeEnabled) {
+                serviceScope.launch { maintainShuffleQueue(forcePrime = true) }
+            }
         }
     }
 
@@ -249,6 +264,66 @@ class PlayerService : MediaLibraryService() {
             songs.forEach { song -> songCache[song.id] = song }
         }
     }
+    private suspend fun maintainShuffleQueue(forcePrime: Boolean = false) {
+        shuffleBufferMutex.withLock {
+            if (!player.shuffleModeEnabled) return
+            if (forcePrime) {
+                addRandomSongs(SHUFFLE_PRIME_BATCH)
+            }
+            val upcoming = countUpcomingItems()
+            if (upcoming < SHUFFLE_BUFFER_TARGET) {
+                addRandomSongs(SHUFFLE_BUFFER_TARGET - upcoming)
+            }
+            trimShuffleHistoryLocked()
+        }
+    }
+
+    private suspend fun addRandomSongs(targetCount: Int) {
+        var added = 0
+        var attempts = 0
+        while (added < targetCount && attempts < SHUFFLE_RANDOM_ATTEMPTS) {
+            attempts++
+            val song = getRandomSongUseCase().getOrNull()
+            if (song == null) continue
+            if (queueContainsMediaId(song.id)) continue
+            cacheSongs(listOf(song))
+            val resolved = resolveMediaItems(listOf(song.toMediaItem()))
+            if (resolved.isEmpty()) continue
+            player.addMediaItems(resolved)
+            added += resolved.size
+        }
+    }
+
+    private fun trimShuffleHistoryLocked() {
+        if (!player.shuffleModeEnabled) return
+        val currentIndex = player.currentMediaItemIndex
+        if (currentIndex < 0) return
+        val removable = currentIndex - SHUFFLE_HISTORY_LIMIT
+        if (removable <= 0) return
+        repeat(removable.coerceAtMost(player.mediaItemCount)) {
+            if (player.mediaItemCount == 0) return
+            player.removeMediaItem(0)
+        }
+    }
+
+    private fun countUpcomingItems(): Int {
+        if (player.mediaItemCount == 0) return 0
+        val currentIndex = player.currentMediaItemIndex
+        return if (currentIndex < 0) {
+            player.mediaItemCount
+        } else {
+            (player.mediaItemCount - currentIndex - 1).coerceAtLeast(0)
+        }
+    }
+
+    private fun queueContainsMediaId(mediaId: String): Boolean {
+        for (index in 0 until player.mediaItemCount) {
+            if (player.getMediaItemAt(index).mediaId == mediaId) {
+                return true
+            }
+        }
+        return false
+    }
 
     private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
         .setMediaId(id)
@@ -392,5 +467,9 @@ class PlayerService : MediaLibraryService() {
         private const val CACHE_SIZE = 250
         private const val SEEK_BACK_MS = 10_000L
         private const val SEEK_FORWARD_MS = 30_000L
+        private const val SHUFFLE_PRIME_BATCH = 10
+        private const val SHUFFLE_BUFFER_TARGET = 25
+        private const val SHUFFLE_HISTORY_LIMIT = 20
+        private const val SHUFFLE_RANDOM_ATTEMPTS = 40
     }
 }

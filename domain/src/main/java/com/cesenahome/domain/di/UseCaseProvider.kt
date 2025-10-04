@@ -16,6 +16,7 @@ object UseCaseProvider {
     lateinit var getSimpleSongsListUseCase: GetSimpleSongsListUseCase
     lateinit var getPagedAlbumUseCase: GetPagedAlbumUseCase
     lateinit var getPagedArtistsUseCase: GetPagedArtistsUseCase
+    lateinit var getRandomSongUseCase: GetRandomSongUseCase
 
 
 
@@ -32,5 +33,6 @@ object UseCaseProvider {
         getSimpleSongsListUseCase = GetSimpleSongsListUseCaseImpl(repositoryProvider.songRepository)
         getPagedAlbumUseCase = GetPagedAlbumUseCaseImpl(repositoryProvider.albumRepository)
         getPagedArtistsUseCase = GetPagedArtistsUseCaseImpl(repositoryProvider.artistRepository)
+        getRandomSongUseCase = GetRandomSongUseCaseImpl(repositoryProvider.songRepository)
     }
 }

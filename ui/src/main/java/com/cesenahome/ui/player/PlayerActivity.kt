@@ -156,6 +156,8 @@ class PlayerActivity : AppCompatActivity() {
         }
         binding.nextButton.setOnClickListener { mediaController?.seekToNextMediaItem() }
         binding.previousButton.setOnClickListener { mediaController?.seekToPreviousMediaItem() }
+        binding.seekBackwardButton.setOnClickListener { mediaController?.seekBack() }
+        binding.seekForwardButton.setOnClickListener { mediaController?.seekForward() }
         binding.restartButton.setOnClickListener {
             mediaController?.let {
                 it.seekToDefaultPosition()
@@ -275,6 +277,10 @@ class PlayerActivity : AppCompatActivity() {
         binding.restartButton.isEnabled = hasMediaItem
         binding.shuffleButton.isEnabled = hasMediaItem
         binding.repeatButton.isEnabled = hasMediaItem
+        binding.seekBackwardButton.isEnabled = hasMediaItem
+        binding.seekForwardButton.isEnabled = hasMediaItem
+        binding.seekBackwardButton.alpha = if (hasMediaItem) 1f else BUTTON_DISABLED_ALPHA
+        binding.seekForwardButton.alpha = if (hasMediaItem) 1f else BUTTON_DISABLED_ALPHA
         if (!hasMediaItem) {
             updateShuffleButton(false)
             updateRepeatButton(Player.REPEAT_MODE_OFF)

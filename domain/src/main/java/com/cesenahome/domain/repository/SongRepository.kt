@@ -10,4 +10,5 @@ interface SongRepository {
 
     fun pagingSongs(pageSize: Int = 200, request: SongPagingRequest): Flow<PagingData<Song>>
     suspend fun getSongsList(page: Int, pageSize: Int): Result<List<Song>>
+    suspend fun getRandomSong(): Result<Song?>
 }

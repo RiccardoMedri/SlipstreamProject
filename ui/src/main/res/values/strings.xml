@@ -36,4 +36,6 @@
     <string name="cd_repeat_all">Repeat all tracks</string>
     <string name="cd_repeat_one">Repeat current track</string>
     <string name="cd_restart_track">Restart current track</string>
+    <string name="cd_seek_backward">Seek backward 10 seconds</string>
+    <string name="cd_seek_forward">Seek forward 10 seconds</string>
 </resources>

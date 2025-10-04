@@ -99,6 +99,16 @@
             app:tint="?attr/colorControlNormal" />
 
         <ImageButton
+            android:id="@+id/seekBackwardButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:contentDescription="@string/cd_seek_backward"
+            android:src="@android:drawable/ic_media_rew"
+            app:tint="?attr/colorControlNormal" />
+
+        <ImageButton
             android:id="@+id/playPauseButton"
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="64dp"
@@ -107,6 +117,16 @@
             android:layout_marginEnd="24dp"
             android:contentDescription="Play/Pause"
             android:src="@android:drawable/ic_media_play"
+            app:tint="?attr/colorControlNormal" />
+
+        <ImageButton
+            android:id="@+id/seekForwardButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="@string/cd_seek_forward"
+            android:src="@android:drawable/ic_media_ff"
             app:tint="?attr/colorControlNormal" />
 
         <ImageButton
