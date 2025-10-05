@@ -1,5 +1,6 @@
 package com.cesenahome.ui.songs
 
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -7,11 +8,16 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -22,10 +28,12 @@ import com.cesenahome.domain.models.Song
 import com.cesenahome.domain.models.SongSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
+import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
-import com.cesenahome.ui.common.NowPlayingFabController
+import com.cesenahome.ui.player.PlayerService
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -34,6 +42,9 @@ class SongsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySongsBinding
     private lateinit var adapter: SongsAdapter
     private lateinit var nowPlayingFabController: NowPlayingFabController
+    private var mediaControllerFuture: ListenableFuture<MediaController>? = null
+    private val mediaController: MediaController?
+        get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
     private val albumId: String? by lazy {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
@@ -80,7 +91,10 @@ class SongsActivity : AppCompatActivity() {
     }
 
     private fun setupList() {
-        adapter = SongsAdapter { song -> viewModel.onSongClicked(song) }
+        adapter = SongsAdapter(
+            onSongClick = { song -> viewModel.onSongClicked(song) },
+            onSongOptionsClick = { song, anchor -> showSongOptionsMenu(song, anchor) }
+        )
 
         binding.recyclerSongs.layoutManager = LinearLayoutManager(this)
         binding.recyclerSongs.adapter = adapter
@@ -125,6 +139,18 @@ class SongsActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val sessionToken = SessionToken(this, ComponentName(this, PlayerService::class.java))
+        mediaControllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
+    }
+
+    override fun onStop() {
+        mediaControllerFuture?.let { MediaController.releaseFuture(it) }
+        mediaControllerFuture = null
+        super.onStop()
     }
 
     private fun updateSortButtons(field: SongSortField, direction: SortDirection) {
@@ -192,6 +218,75 @@ class SongsActivity : AppCompatActivity() {
         popup.show()
     }
 
+    private fun showSongOptionsMenu(song: Song, anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_song_options, popup.menu)
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_add_to_queue -> {
+                    addSongToQueue(song)
+                    true
+                }
+                R.id.action_play_next -> {
+                    playSongNext(song)
+                    true
+                }
+                else -> false
+            }
+        }
+        popup.show()
+    }
+
+    private fun addSongToQueue(song: Song) {
+        val controller = mediaController
+        if (controller == null) {
+            Toast.makeText(this, R.string.queue_action_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val mediaItem = song.toMediaItem()
+        if (controller.mediaItemCount == 0) {
+            controller.setMediaItem(mediaItem)
+            controller.prepare()
+            controller.play()
+        } else {
+            controller.addMediaItem(mediaItem)
+        }
+        Toast.makeText(this, R.string.queue_song_added_to_end, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun playSongNext(song: Song) {
+        val controller = mediaController
+        if (controller == null) {
+            Toast.makeText(this, R.string.queue_action_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val mediaItem = song.toMediaItem()
+        if (controller.mediaItemCount == 0) {
+            controller.setMediaItem(mediaItem)
+            controller.prepare()
+            controller.play()
+        } else {
+            val currentIndex = controller.currentMediaItemIndex.takeIf { it >= 0 } ?: (controller.mediaItemCount - 1)
+            val insertIndex = (currentIndex + 1).coerceAtMost(controller.mediaItemCount)
+            controller.addMediaItem(insertIndex, mediaItem)
+        }
+        Toast.makeText(this, R.string.queue_song_added_next, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
+        .setMediaId(id)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(title)
+                .setArtist(artist)
+                .setAlbumTitle(album)
+                .setArtworkUri(artworkUrl?.toUri())
+                .setIsBrowsable(false)
+                .setIsPlayable(true)
+                .build()
+        )
+        .build()
+
 
     @OptIn(UnstableApi::class)
     private fun launchPlayerActivity(song: Song) {
@@ -224,8 +319,4 @@ class SongsActivity : AppCompatActivity() {
         durationMs = durationMs,
         artworkUrl = artworkUrl
     )
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
 }

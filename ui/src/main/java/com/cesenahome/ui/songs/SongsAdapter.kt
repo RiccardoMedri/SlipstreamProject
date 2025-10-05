@@ -1,6 +1,7 @@
 package com.cesenahome.ui.songs
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.paging.PagingDataAdapter
@@ -11,8 +12,9 @@ import com.bumptech.glide.Glide
 import java.util.concurrent.TimeUnit
 
 class SongsAdapter(
-    private val onSongClick: (Song) -> Unit
-): PagingDataAdapter<Song, SongsAdapter.VH>(DIFF) {
+    private val onSongClick: (Song) -> Unit,
+    private val onSongOptionsClick: (Song, View) -> Unit,
+) : PagingDataAdapter<Song, SongsAdapter.VH>(DIFF) {
 
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<Song>() {
@@ -39,7 +41,10 @@ class SongsAdapter(
             .into(holder.binding.cover)
 
         holder.itemView.setOnClickListener {
-            onSongClick?.invoke(item)
+            onSongClick.invoke(item)
+        }
+        holder.binding.optionsButton.setOnClickListener { view ->
+            onSongOptionsClick.invoke(item, view)
         }
     }
 

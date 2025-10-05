@@ -3,8 +3,10 @@ package com.cesenahome.ui.player
 import android.content.ComponentName
 import android.os.Bundle
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -13,12 +15,18 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivityPlayerBinding
+import com.cesenahome.ui.databinding.DialogQueueBottomSheetBinding
 import com.cesenahome.domain.models.QueueSong
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import java.util.ArrayList
 import java.util.Formatter
 import java.util.Locale
 
@@ -30,6 +38,10 @@ class PlayerActivity : AppCompatActivity() {
     private val mediaController: MediaController? get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
     private var currentSongId: String? = null
     private var isSeeking = false
+    private var queueDialog: BottomSheetDialog? = null
+    private var queueDialogBinding: DialogQueueBottomSheetBinding? = null
+    private var queueAdapter: QueueAdapter? = null
+    private var queueDragHelper: ItemTouchHelper? = null
     private val progressUpdater = object : Runnable {
         override fun run() {
             mediaController?.let {
@@ -51,7 +63,7 @@ class PlayerActivity : AppCompatActivity() {
         const val EXTRA_SONG_DURATION_MS = "extra_song_duration_ms"
         const val EXTRA_QUEUE_SONGS = "extra_queue_songs"
         const val EXTRA_QUEUE_SELECTED_INDEX = "extra_queue_selected_index"
-        private const val PROGRESS_UPDATE_INTERVAL_MS = 500L
+        private const val PROGRESS_UPDATE_INTERVAL_MS = 100L
         private const val BUTTON_DISABLED_ALPHA = 0.4f
     }
 
@@ -99,12 +111,18 @@ class PlayerActivity : AppCompatActivity() {
                 }
                 updateShuffleButton(controller.shuffleModeEnabled)
                 updateRepeatButton(controller.repeatMode)
+                updateQueueDialog()
             },
             MoreExecutors.directExecutor()
         )
     }
 
     override fun onStop() {
+        queueDialog?.dismiss()
+        queueDialog = null
+        queueAdapter = null
+        queueDialogBinding = null
+        queueDragHelper = null
         mediaController?.removeListener(playerListener)
         mediaControllerFuture?.let { MediaController.releaseFuture(it) }
         mediaControllerFuture = null
@@ -178,6 +196,9 @@ class PlayerActivity : AppCompatActivity() {
                 updateRepeatButton(nextMode)
             }
         }
+        binding.showQueueButton.setOnClickListener {
+            showQueueDialog()
+        }
 
         binding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -206,6 +227,7 @@ class PlayerActivity : AppCompatActivity() {
                 .load(mediaMetadata.artworkUri)
                 .into(binding.artworkImageView)
             currentSongId = mediaController?.currentMediaItem?.mediaId
+            updateQueueDialog()
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -220,16 +242,19 @@ class PlayerActivity : AppCompatActivity() {
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
             updateShuffleButton(shuffleModeEnabled)
+            updateQueueDialog()
         }
 
         override fun onRepeatModeChanged(repeatMode: Int) {
             updateRepeatButton(repeatMode)
+            updateQueueDialog()
         }
 
         override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
             // Called when player jumps to a new item or position (e.g. seekToNext, seekToPrevious, seekTo)
             updateProgress(newPosition.positionMs, mediaController?.duration ?: 0)
             updateUiWithCurrentMediaItem(mediaController?.mediaItemCount ?: 0 > 0)
+            updateQueueDialog()
         }
     }
 
@@ -281,6 +306,9 @@ class PlayerActivity : AppCompatActivity() {
         binding.seekForwardButton.isEnabled = hasMediaItem
         binding.seekBackwardButton.alpha = if (hasMediaItem) 1f else BUTTON_DISABLED_ALPHA
         binding.seekForwardButton.alpha = if (hasMediaItem) 1f else BUTTON_DISABLED_ALPHA
+        val queueEnabled = mediaController != null
+        binding.showQueueButton.isEnabled = queueEnabled
+        binding.showQueueButton.alpha = if (queueEnabled) 1f else BUTTON_DISABLED_ALPHA
         if (!hasMediaItem) {
             updateShuffleButton(false)
             updateRepeatButton(Player.REPEAT_MODE_OFF)
@@ -290,6 +318,7 @@ class PlayerActivity : AppCompatActivity() {
         binding.nextButton.alpha = if (controller?.hasNextMediaItem() == true) 1f else BUTTON_DISABLED_ALPHA
         binding.previousButton.isEnabled = controller?.hasPreviousMediaItem() == true
         binding.nextButton.isEnabled = controller?.hasNextMediaItem() == true
+        updateQueueDialog()
     }
 
     private fun formatDuration(durationMs: Long): String {
@@ -333,4 +362,126 @@ class PlayerActivity : AppCompatActivity() {
         Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
         else -> Player.REPEAT_MODE_OFF
     }
+
+    private fun showQueueDialog() {
+        val controller = mediaController
+        if (controller == null) {
+            Toast.makeText(this, R.string.queue_action_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (queueDialog?.isShowing == true) {
+            return
+        }
+
+        val binding = DialogQueueBottomSheetBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(this)
+        dialog.setContentView(binding.root)
+
+        val initialSongs = controller.buildQueueSongs()
+        val adapter = QueueAdapter(initialSongs, controller.currentMediaItem?.mediaId)
+
+        binding.queueRecycler.layoutManager = LinearLayoutManager(this)
+        binding.queueRecycler.adapter = adapter
+
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            0
+        ) {
+            private var dragFrom = RecyclerView.NO_POSITION
+            private var dragTo = RecyclerView.NO_POSITION
+
+            override fun isLongPressDragEnabled(): Boolean = false
+
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
+                if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false
+                if (dragFrom == RecyclerView.NO_POSITION) {
+                    dragFrom = from
+                }
+                dragTo = to
+                adapter.onItemMove(from, to)
+                return true
+            }
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+                if (dragFrom != RecyclerView.NO_POSITION && dragTo != RecyclerView.NO_POSITION && dragFrom != dragTo) {
+                    controller.moveMediaItem(dragFrom, dragTo)
+                    updateQueueDialog()
+                }
+                dragFrom = RecyclerView.NO_POSITION
+                dragTo = RecyclerView.NO_POSITION
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                // Swipe not supported
+            }
+        })
+
+        queueDragHelper = itemTouchHelper
+        itemTouchHelper.attachToRecyclerView(binding.queueRecycler)
+        adapter.setDragStarter { viewHolder -> queueDragHelper?.startDrag(viewHolder) }
+
+        queueDialog = dialog
+        queueDialogBinding = binding
+        queueAdapter = adapter
+        updateQueueDialog()
+
+        dialog.setOnDismissListener {
+            queueDialog = null
+            queueAdapter = null
+            queueDialogBinding = null
+            queueDragHelper = null
+        }
+
+        dialog.show()
+    }
+
+    private fun updateQueueDialog() {
+        val binding = queueDialogBinding ?: return
+        val adapter = queueAdapter ?: return
+        val controller = mediaController ?: return
+        val queueSongs = controller.buildQueueSongs()
+        adapter.updateItems(queueSongs, controller.currentMediaItem?.mediaId)
+        val hasItems = queueSongs.isNotEmpty()
+        binding.queueRecycler.isVisible = hasItems
+        binding.dragHint.isVisible = queueSongs.size > 1
+        binding.emptyText.isVisible = !hasItems
+    }
+
+    private fun QueueSong.toMediaItem(): MediaItem = MediaItem.Builder()
+        .setMediaId(id)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(title)
+                .setArtist(artist)
+                .setAlbumTitle(album)
+                .setArtworkUri(artworkUrl?.toUri())
+                .setIsBrowsable(false)
+                .setIsPlayable(true)
+                .build()
+        )
+        .build()
+
+    private fun MediaController.buildQueueSongs(): List<QueueSong> {
+        val items = ArrayList<QueueSong>(mediaItemCount)
+        for (index in 0 until mediaItemCount) {
+            items += getMediaItemAt(index).toQueueSong()
+        }
+        return items
+    }
+
+    private fun MediaItem.toQueueSong(): QueueSong = QueueSong(
+        id = mediaId,
+        title = mediaMetadata.title?.toString().orEmpty(),
+        artist = mediaMetadata.artist?.toString(),
+        album = mediaMetadata.albumTitle?.toString(),
+        durationMs = null,
+        artworkUrl = mediaMetadata.artworkUri?.toString()
+    )
 }

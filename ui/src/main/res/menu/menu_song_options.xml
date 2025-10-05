@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_add_to_queue"
+        android:title="@string/song_options_add_to_queue" />
+    <item
+        android:id="@+id/action_play_next"
+        android:title="@string/song_options_play_next" />
+</menu>

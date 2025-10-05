@@ -39,4 +39,13 @@
     <string name="cd_seek_backward">Seek backward 10 seconds</string>
     <string name="cd_seek_forward">Seek forward 30 seconds</string>
     <string name="player_fab_label">Now playing</string>
+    <string name="song_options_content_description">Song options</string>
+    <string name="song_options_add_to_queue">Add to queue</string>
+    <string name="song_options_play_next">Play next</string>
+    <string name="queue_action_unavailable">Connect to the player to manage the queue.</string>
+    <string name="queue_song_added_to_end">Song added to the end of the queue.</string>
+    <string name="queue_song_added_next">Song will play next.</string>
+    <string name="player_show_queue">Show queue</string>
+    <string name="player_queue_empty">The queue is currently empty.</string>
+    <string name="player_queue_drag_hint">Press and hold for 1 second, then drag to reorder songs.</string>
 </resources>
