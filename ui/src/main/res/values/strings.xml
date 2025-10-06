@@ -11,6 +11,7 @@
     <string name="title_songs">Songs</string>
     <string name="title_albums">Albums</string>
     <string name="title_artists">Artists</string>
+    <string name="title_playlists">Playlists</string>
     <string name="sort_field_default">Sort: Name</string>
     <string name="sort_order_default">Order: Ascending</string>
     <string name="songs_sort_by_name">Name</string>
@@ -22,6 +23,8 @@
     <string name="albums_sort_by_date_added">Date added</string>
     <string name="artists_sort_by_name">Name</string>
     <string name="artists_sort_by_date_added">Date added</string>
+    <string name="playlists_sort_by_name">Name</string>
+    <string name="playlists_sort_by_date_added">Date added</string>
     <string name="sort_order_ascending">Ascending</string>
     <string name="sort_order_descending">Descending</string>
     <string name="sort_field_label">Sort: %1$s</string>
@@ -30,6 +33,14 @@
     <string name="search_hint_artists">Search artists</string>
     <string name="search_hint_albums">Search albums or artists</string>
     <string name="search_hint_songs">Search songs or album artists</string>
+    <string name="search_hint_playlists">Search playlists</string>
+    <string name="cd_playlist_art">Playlist artwork</string>
+    <string name="playlist_liked_songs_title">Liked Songs</string>
+    <plurals name="playlist_song_count">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <string name="playlist_subtitle_with_duration">%1$s • %2$s</string>
     <string name="cd_shuffle_off">Enable shuffle</string>
     <string name="cd_shuffle_on">Disable shuffle</string>
     <string name="cd_repeat_off">Repeat off</string>

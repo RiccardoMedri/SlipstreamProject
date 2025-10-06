@@ -12,6 +12,7 @@ object UseCaseProvider {
     lateinit var getHomepageMenuUseCase: GetHomepageMenuUseCase
     lateinit var getLibraryCountsUseCase: GetLibraryCountsUseCase
     lateinit var getPagedSongsUseCase: GetPagedSongsUseCase
+    lateinit var getPagedPlaylistsUseCase: GetPagedPlaylistsUseCase
     lateinit var resolveStreamUrlUseCase: ResolveStreamUrlUseCase
     lateinit var getSimpleSongsListUseCase: GetSimpleSongsListUseCase
     lateinit var getPagedAlbumUseCase: GetPagedAlbumUseCase
@@ -29,6 +30,7 @@ object UseCaseProvider {
         getHomepageMenuUseCase = GetHomepageMenuUseCaseImpl(repositoryProvider.homeRepository)
         getLibraryCountsUseCase = GetLibraryCountsUseCaseImpl(repositoryProvider.homeRepository)
         getPagedSongsUseCase = GetPagedSongsUseCaseImpl(repositoryProvider.songRepository)
+        getPagedPlaylistsUseCase = GetPagedPlaylistsUseCaseImpl(repositoryProvider.playlistRepository)
         resolveStreamUrlUseCase = ResolveStreamUrlUseCaseImpl(repositoryProvider.playerRepository)
         getSimpleSongsListUseCase = GetSimpleSongsListUseCaseImpl(repositoryProvider.songRepository)
         getPagedAlbumUseCase = GetPagedAlbumUseCaseImpl(repositoryProvider.albumRepository)

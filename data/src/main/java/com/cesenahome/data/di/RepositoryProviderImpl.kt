@@ -16,6 +16,8 @@ import com.cesenahome.domain.repository.PlayerRepository
 import com.cesenahome.data.repository.PlayerRepositoryImpl
 import com.cesenahome.domain.repository.AlbumRepository
 import com.cesenahome.domain.repository.ArtistRepository
+import com.cesenahome.data.repository.PlaylistRepositoryImpl
+import com.cesenahome.domain.repository.PlaylistRepository
 
 class RepositoryProviderImpl(
     private val context: Context
@@ -58,6 +60,11 @@ class RepositoryProviderImpl(
     }
     override val artistRepository: ArtistRepository by lazy {
         ArtistRepositoryImpl(
+            apiClient = jellyfinApiClient
+        )
+    }
+    override val playlistRepository: PlaylistRepository by lazy {
+        PlaylistRepositoryImpl(
             apiClient = jellyfinApiClient
         )
     }

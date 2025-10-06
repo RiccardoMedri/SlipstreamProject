@@ -14,6 +14,7 @@ import com.cesenahome.domain.models.HomeDestination
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.artist.ArtistActivity
 import com.cesenahome.ui.songs.SongsActivity
+import com.cesenahome.ui.playlist.PlaylistActivity
 import kotlinx.coroutines.launch
 
 class HomepageActivity : AppCompatActivity() {
@@ -81,7 +82,7 @@ class HomepageActivity : AppCompatActivity() {
         when (dest) {
             HomeDestination.ARTISTS   -> startActivity(Intent(this, ArtistActivity::class.java))
             HomeDestination.ALBUMS    -> startActivity(Intent(this, AlbumActivity::class.java))
-            HomeDestination.PLAYLISTS -> { /* TODO */ }
+            HomeDestination.PLAYLISTS -> startActivity(Intent(this, PlaylistActivity::class.java))
             HomeDestination.SONGS     -> startActivity(Intent(this, SongsActivity::class.java))
         }
     }

@@ -2,6 +2,7 @@ package com.cesenahome.data.remote
 
 import com.cesenahome.domain.models.Album
 import com.cesenahome.domain.models.Artist
+import com.cesenahome.domain.models.Playlist
 import com.cesenahome.domain.models.Song
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
@@ -44,5 +45,19 @@ fun BaseItemDto.toArtist(apiClient: JellyfinApiClient): Artist {
         name = this.name.orEmpty(),
         artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 1080),
         albums = emptyList()
+    )
+}
+
+fun BaseItemDto.toPlaylist(apiClient: JellyfinApiClient): Playlist {
+    val idStr = this.id?.toString().orEmpty()
+    val primaryTag = this.imageTags?.get(ImageType.PRIMARY)
+    val ticks = this.runTimeTicks
+
+    return Playlist(
+        id = idStr,
+        name = this.name.orEmpty(),
+        songCount = this.songCount ?: this.childCount,
+        durationMs = ticks?.let { it / 10_000L },
+        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 512),
     )
 }

@@ -5,6 +5,8 @@ import com.cesenahome.domain.models.AlbumPagingRequest
 import com.cesenahome.domain.models.AlbumSortField
 import com.cesenahome.domain.models.ArtistPagingRequest
 import com.cesenahome.domain.models.ArtistSortField
+import com.cesenahome.domain.models.PlaylistPagingRequest
+import com.cesenahome.domain.models.PlaylistSortField
 import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.domain.models.SongPagingRequest
 import com.cesenahome.domain.models.SongSortField
@@ -27,6 +29,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.ItemFilter
 
 class JellyfinApiClient(
     appContext: Context,
@@ -132,7 +135,20 @@ class JellyfinApiClient(
         )
         response.items
     }
-
+    suspend fun fetchPlaylists(startIndex: Int, limit: Int, request: PlaylistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: error("ApiClient not initialized")
+        val response by currentApi.itemsApi.getItems(
+            userId = getCurrentUserId(),
+            recursive = true,
+            includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+            sortBy = listOf(request.sortOption.field.toApiSortBy()),
+            sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
+            startIndex = startIndex,
+            limit = limit,
+            searchTerm = request.searchQuery.takeIfNotBlank()
+        )
+        response.items
+    }
     suspend fun fetchArtists(startIndex: Int, limit: Int, request: ArtistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         val response by currentApi.itemsApi.getItems(
@@ -171,6 +187,10 @@ class JellyfinApiClient(
         SongSortField.NAME -> ItemSortBy.NAME
         SongSortField.ALBUM_ARTIST -> ItemSortBy.ALBUM_ARTIST
         SongSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
+    }
+    private fun PlaylistSortField.toApiSortBy(): ItemSortBy = when (this) {
+        PlaylistSortField.NAME -> ItemSortBy.NAME
+        PlaylistSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
     }
     private fun SortDirection.toApiSortOrder(): SortOrder = when (this) {
         SortDirection.ASCENDING -> SortOrder.ASCENDING
