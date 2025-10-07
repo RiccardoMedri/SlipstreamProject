@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.models.song.SongSortField
@@ -33,7 +34,9 @@ class SongsViewModel(
     val sortState: StateFlow<SongSortOption> = sortOptionState.asStateFlow()
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
-    val pagedSongs: Flow<PagingData<Song>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
+    private val favouriteOverrides = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+
+    private val basePagedSongs: Flow<PagingData<Song>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
         sortOption to query
     }
         .flatMapLatest { (sortOption, query) ->
@@ -46,6 +49,13 @@ class SongsViewModel(
             )
         }
         .cachedIn(viewModelScope)
+    val pagedSongs: Flow<PagingData<Song>> = basePagedSongs
+        .combine(favouriteOverrides) { pagingData, overrides ->
+            pagingData.map { song ->
+                val override = overrides[song.id]
+                if (override == null) song else song.copy(isFavorite = override)
+            }
+        }
 
     sealed interface PlayCommand {
         data class PlaySong(val song: Song) : PlayCommand
@@ -87,11 +97,20 @@ class SongsViewModel(
         }
     }
     fun onAddSongToFavourites(song: Song) {
+        if (song.isFavorite || favouriteOverrides.value[song.id] == true) {
+            viewModelScope.launch {
+                _favouriteEvents.emit(FavouriteEvent.Success(song))
+            }
+            return
+        }
         viewModelScope.launch {
             val result = addSongToFavouritesUseCase(song.id)
             result.fold(
                 onSuccess = {
-                    _favouriteEvents.emit(FavouriteEvent.Success(song))
+                    favouriteOverrides.update { current ->
+                        if (current[song.id] == true) current else current + (song.id to true)
+                    }
+                    _favouriteEvents.emit(FavouriteEvent.Success(song.copy(isFavorite = true)))
                 },
                 onFailure = { error ->
                     _favouriteEvents.emit(FavouriteEvent.Failure(song, error.message))

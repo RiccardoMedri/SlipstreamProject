@@ -6,5 +6,6 @@ data class Song(
     val artist: String?,
     val album: String?,
     val durationMs: Long?,
-    val artworkUrl: String?
+    val artworkUrl: String?,
+    val isFavorite: Boolean
 )

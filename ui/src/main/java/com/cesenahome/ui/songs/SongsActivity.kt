@@ -97,7 +97,8 @@ class SongsActivity : AppCompatActivity() {
     private fun setupList() {
         adapter = SongsAdapter(
             onSongClick = { song -> viewModel.onSongClicked(song) },
-            onSongOptionsClick = { song, anchor -> showSongOptionsMenu(song, anchor) }
+            onSongOptionsClick = { song, anchor -> showSongOptionsMenu(song, anchor) },
+            onFavouriteClick = { song -> viewModel.onAddSongToFavourites(song) }
         )
 
         binding.recyclerSongs.layoutManager = LinearLayoutManager(this)
@@ -252,10 +253,6 @@ class SongsActivity : AppCompatActivity() {
                 }
                 R.id.action_play_next -> {
                     playSongNext(song)
-                    true
-                }
-                R.id.action_add_to_favourites -> {
-                    viewModel.onAddSongToFavourites(song)
                     true
                 }
                 else -> false

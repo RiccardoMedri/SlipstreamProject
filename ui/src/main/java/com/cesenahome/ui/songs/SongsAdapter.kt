@@ -5,15 +5,17 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.paging.PagingDataAdapter
-import com.cesenahome.domain.models.song.Song
-import com.cesenahome.ui.databinding.ItemSongBinding
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.cesenahome.domain.models.song.Song
+import com.cesenahome.ui.R
+import com.cesenahome.ui.databinding.ItemSongBinding
 import java.util.concurrent.TimeUnit
 
 class SongsAdapter(
     private val onSongClick: (Song) -> Unit,
     private val onSongOptionsClick: (Song, View) -> Unit,
+    private val onFavouriteClick: (Song) -> Unit,
 ) : PagingDataAdapter<Song, SongsAdapter.VH>(DIFF) {
 
     companion object {
@@ -45,6 +47,19 @@ class SongsAdapter(
         }
         holder.binding.optionsButton.setOnClickListener { view ->
             onSongOptionsClick.invoke(item, view)
+        }
+        holder.binding.favouriteButton.apply {
+            val isFavourite = item.isFavorite
+            setImageResource(if (isFavourite) R.drawable.ic_favourite else R.drawable.ic_favourite_border)
+            contentDescription = context.getString(
+                if (isFavourite) {
+                    R.string.song_favourite_button_content_description_selected
+                } else {
+                    R.string.song_favourite_button_content_description_unselected
+                }
+            )
+            isSelected = isFavourite
+            setOnClickListener { onFavouriteClick.invoke(item) }
         }
     }
 

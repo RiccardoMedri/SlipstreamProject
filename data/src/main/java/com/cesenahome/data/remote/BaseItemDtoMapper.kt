@@ -18,7 +18,8 @@ fun BaseItemDto.toSong(apiClient: JellyfinApiClient): Song {
         album = this.album,
         artist = this.artists?.firstOrNull(),
         durationMs = ticks?.let { it / 10_000L },
-        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 256)
+        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 256),
+        isFavorite = this.userData?.isFavorite == true
     )
 }
 
