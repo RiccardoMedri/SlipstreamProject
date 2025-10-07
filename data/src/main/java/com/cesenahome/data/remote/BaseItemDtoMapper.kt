@@ -1,9 +1,9 @@
 package com.cesenahome.data.remote
 
-import com.cesenahome.domain.models.Album
-import com.cesenahome.domain.models.Artist
-import com.cesenahome.domain.models.Playlist
-import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.album.Album
+import com.cesenahome.domain.models.artist.Artist
+import com.cesenahome.domain.models.playlist.Playlist
+import com.cesenahome.domain.models.song.Song
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
 

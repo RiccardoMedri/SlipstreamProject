@@ -1,16 +1,16 @@
 package com.cesenahome.data.remote
 
 import android.content.Context
-import com.cesenahome.domain.models.AlbumPagingRequest
-import com.cesenahome.domain.models.AlbumSortField
-import com.cesenahome.domain.models.ArtistPagingRequest
-import com.cesenahome.domain.models.ArtistSortField
-import com.cesenahome.domain.models.PlaylistPagingRequest
-import com.cesenahome.domain.models.PlaylistSortField
-import com.cesenahome.domain.models.SortDirection
-import com.cesenahome.domain.models.SongPagingRequest
-import com.cesenahome.domain.models.SongSortField
-import com.cesenahome.domain.models.User
+import com.cesenahome.domain.models.album.AlbumPagingRequest
+import com.cesenahome.domain.models.album.AlbumSortField
+import com.cesenahome.domain.models.artist.ArtistPagingRequest
+import com.cesenahome.domain.models.artist.ArtistSortField
+import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
+import com.cesenahome.domain.models.playlist.PlaylistSortField
+import com.cesenahome.domain.models.song.SortDirection
+import com.cesenahome.domain.models.song.SongPagingRequest
+import com.cesenahome.domain.models.song.SongSortField
+import com.cesenahome.domain.models.login.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.Jellyfin
@@ -21,6 +21,7 @@ import org.jellyfin.sdk.api.client.extensions.authenticateUserByName
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.imageApi
+import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
@@ -29,7 +30,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.ImageType
-import org.jellyfin.sdk.model.api.ItemFilter
 
 class JellyfinApiClient(
     appContext: Context,
@@ -57,7 +57,7 @@ class JellyfinApiClient(
                 password = password
             )
 
-            currentApi.update(accessToken = auth.accessToken)
+            updateAuthenticatedUser(auth.user?.id)
 
             currentUserId = auth.user?.id
 
@@ -137,7 +137,7 @@ class JellyfinApiClient(
     }
     suspend fun fetchPlaylists(startIndex: Int, limit: Int, request: PlaylistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val response by currentApi.itemsApi.getItems(
+        val response by currentApi.itemsApi.getItems(        //playlistApi.getPlaylist has not been used as it would return a single item
             userId = getCurrentUserId(),
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.PLAYLIST),
@@ -151,7 +151,7 @@ class JellyfinApiClient(
     }
     suspend fun fetchArtists(startIndex: Int, limit: Int, request: ArtistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val response by currentApi.itemsApi.getItems(
+        val response by currentApi.itemsApi.getItems(       //think about implemting it with artistApi.getAlbumArtist or any other didicated method
             userId = getCurrentUserId(),
             recursive = true,
             includeItemTypes = listOf(BaseItemKind.MUSIC_ARTIST),
@@ -163,8 +163,30 @@ class JellyfinApiClient(
         )
         response.items
     }
+    suspend fun addSongToFavourite(songId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val currentApi = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
+        val songUuid = parseUuidOrNull(songId)
+            ?: return@withContext Result.failure(IllegalArgumentException("Invalid song identifier"))
+        val userUuid = getCurrentUserId()
+            ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
+
+        try {
+            currentApi.userLibraryApi.markFavoriteItem(
+                itemId = songUuid,
+                userId = userUuid,
+            )
+            Result.success(Unit)
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
+    }
     fun clearSession() {
         apiClient?.update(accessToken = null)
+        updateAuthenticatedUser(null)
+    }
+
+    fun updateAuthenticatedUser(userId: UUID?) {
+        currentUserId = userId
     }
 
 

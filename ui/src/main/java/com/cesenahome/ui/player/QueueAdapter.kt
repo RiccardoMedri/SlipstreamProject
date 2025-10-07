@@ -5,7 +5,7 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
-import com.cesenahome.domain.models.QueueSong
+import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ItemQueueSongBinding
 import java.util.Collections

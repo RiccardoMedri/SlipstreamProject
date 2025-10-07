@@ -14,8 +14,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.GridLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.AlbumSortField
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.album.AlbumSortField
+import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu

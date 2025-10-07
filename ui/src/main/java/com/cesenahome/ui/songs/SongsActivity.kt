@@ -23,10 +23,10 @@ import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.QueueSong
-import com.cesenahome.domain.models.Song
-import com.cesenahome.domain.models.SongSortField
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.song.QueueSong
+import com.cesenahome.domain.models.song.Song
+import com.cesenahome.domain.models.song.SongSortField
+import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
@@ -49,7 +49,11 @@ class SongsActivity : AppCompatActivity() {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
     private val viewModel: SongsViewModel by lazy {
-        SongsViewModel(UseCaseProvider.getPagedSongsUseCase, albumId)
+        SongsViewModel(
+            UseCaseProvider.getPagedSongsUseCase,
+            UseCaseProvider.addSongToFavouritesUseCase,
+            albumId
+        )
     }
     companion object {
         const val EXTRA_ALBUM_ID = "extra_album_id"
@@ -135,6 +139,25 @@ class SongsActivity : AppCompatActivity() {
                 launch {
                     viewModel.sortState.collect { sortOption ->
                         updateSortButtons(sortOption.field, sortOption.direction)
+                    }
+                }
+                launch {
+                    viewModel.favouriteEvents.collect { event ->
+                        when (event) {
+                            is SongsViewModel.FavouriteEvent.Success -> {
+                                Toast.makeText(
+                                    this@SongsActivity,
+                                    getString(R.string.song_favourite_add_success, event.song.title),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            is SongsViewModel.FavouriteEvent.Failure -> {
+                                val baseMessage = getString(R.string.song_favourite_add_failure)
+                                val detail = event.reason?.takeIf { it.isNotBlank() }
+                                val finalMessage = detail?.let { "$baseMessage: $it" } ?: baseMessage
+                                Toast.makeText(this@SongsActivity, finalMessage, Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 }
             }
@@ -229,6 +252,10 @@ class SongsActivity : AppCompatActivity() {
                 }
                 R.id.action_play_next -> {
                     playSongNext(song)
+                    true
+                }
+                R.id.action_add_to_favourites -> {
+                    viewModel.onAddSongToFavourites(song)
                     true
                 }
                 else -> false

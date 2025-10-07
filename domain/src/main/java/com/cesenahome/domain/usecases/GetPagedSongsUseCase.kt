@@ -1,8 +1,8 @@
 package com.cesenahome.domain.usecases
 
 import androidx.paging.PagingData
-import com.cesenahome.domain.models.Song
-import com.cesenahome.domain.models.SongPagingRequest
+import com.cesenahome.domain.models.song.Song
+import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.repository.SongRepository
 import kotlinx.coroutines.flow.Flow
 

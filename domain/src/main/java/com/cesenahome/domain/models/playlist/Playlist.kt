@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.playlist
 
 data class Playlist(
     val id: String,

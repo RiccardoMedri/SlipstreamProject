@@ -1,6 +1,6 @@
 package com.cesenahome.domain.usecases
 
-import com.cesenahome.domain.models.HomeMenuItem
+import com.cesenahome.domain.models.homepage.HomeMenuItem
 import com.cesenahome.domain.repository.HomepageRepository
 
 fun interface GetHomepageMenuUseCase {

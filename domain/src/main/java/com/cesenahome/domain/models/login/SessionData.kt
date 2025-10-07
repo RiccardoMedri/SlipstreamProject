@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.login
 
 data class SessionData(
     val serverUrl: String,

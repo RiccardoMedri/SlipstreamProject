@@ -1,6 +1,6 @@
 package com.cesenahome.domain.usecases
 
-import com.cesenahome.domain.models.LibraryCounts
+import com.cesenahome.domain.models.homepage.LibraryCounts
 import com.cesenahome.domain.repository.HomepageRepository
 
 fun interface GetLibraryCountsUseCase {

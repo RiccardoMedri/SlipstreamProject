@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.song
 
 data class Song(
     val id: String,

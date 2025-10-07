@@ -14,9 +14,9 @@ import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.Playlist
-import com.cesenahome.domain.models.PlaylistSortField
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.playlist.Playlist
+import com.cesenahome.domain.models.playlist.PlaylistSortField
+import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu

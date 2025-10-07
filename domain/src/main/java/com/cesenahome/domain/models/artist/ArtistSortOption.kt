@@ -1,4 +1,6 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.artist
+
+import com.cesenahome.domain.models.song.SortDirection
 
 enum class ArtistSortField {
     NAME,

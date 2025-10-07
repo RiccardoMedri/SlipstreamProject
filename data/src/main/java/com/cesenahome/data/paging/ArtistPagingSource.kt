@@ -4,8 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toArtist
-import com.cesenahome.domain.models.Artist
-import com.cesenahome.domain.models.ArtistPagingRequest
+import com.cesenahome.domain.models.artist.Artist
+import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class ArtistPagingSource(

@@ -4,8 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toSong
-import com.cesenahome.domain.models.Song
-import com.cesenahome.domain.models.SongPagingRequest
+import com.cesenahome.domain.models.song.Song
+import com.cesenahome.domain.models.song.SongPagingRequest
 
 class SongPagingSource(
     private val api: JellyfinApiClient,

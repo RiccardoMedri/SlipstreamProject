@@ -1,8 +1,8 @@
 package com.cesenahome.domain.repository
 
 import androidx.paging.PagingData
-import com.cesenahome.domain.models.Album
-import com.cesenahome.domain.models.AlbumPagingRequest
+import com.cesenahome.domain.models.album.Album
+import com.cesenahome.domain.models.album.AlbumPagingRequest
 import kotlinx.coroutines.flow.Flow
 
 interface AlbumRepository {

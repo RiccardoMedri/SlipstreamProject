@@ -1,8 +1,7 @@
 package com.cesenahome.domain.repository
 
-import com.cesenahome.domain.models.HomeMenuItem
-import com.cesenahome.domain.models.LibraryCounts
-import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.homepage.HomeMenuItem
+import com.cesenahome.domain.models.homepage.LibraryCounts
 
 interface HomepageRepository {
     /**

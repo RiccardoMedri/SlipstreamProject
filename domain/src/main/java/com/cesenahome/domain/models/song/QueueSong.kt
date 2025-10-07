@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.song
 
 import android.os.Parcelable
 import androidx.core.net.toUri

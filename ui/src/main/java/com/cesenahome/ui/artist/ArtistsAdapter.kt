@@ -6,8 +6,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.cesenahome.domain.models.Artist
-import com.cesenahome.ui.R // Assuming you have a placeholder in your R file
+import com.cesenahome.domain.models.artist.Artist
 import com.cesenahome.ui.databinding.ItemArtistBinding
 
 class ArtistsAdapter(

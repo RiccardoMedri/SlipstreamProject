@@ -6,8 +6,8 @@ import androidx.paging.PagingData
 import com.cesenahome.data.paging.SongPagingSource
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toSong
-import com.cesenahome.domain.models.Song
-import com.cesenahome.domain.models.SongPagingRequest
+import com.cesenahome.domain.models.song.Song
+import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.repository.SongRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -70,5 +70,9 @@ class SongRepositoryImpl(
             cachedSongsCount = null
             Result.failure(e)
         }
+    }
+
+    override suspend fun addSongToFavourites(songId: String): Result<Unit> {
+        return jellyfinApiClient.addSongToFavourite(songId)
     }
 }

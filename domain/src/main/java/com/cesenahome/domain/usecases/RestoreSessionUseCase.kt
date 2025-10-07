@@ -1,6 +1,6 @@
 package com.cesenahome.domain.usecases
 
-import com.cesenahome.domain.models.LoginResult
+import com.cesenahome.domain.models.login.LoginResult
 import com.cesenahome.domain.repository.LoginRepository
 
 interface RestoreSessionUseCase {

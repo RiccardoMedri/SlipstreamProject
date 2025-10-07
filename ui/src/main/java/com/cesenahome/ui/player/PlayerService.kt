@@ -24,7 +24,7 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionError
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.song.Song
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope

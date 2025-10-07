@@ -1,4 +1,6 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.album
+
+import com.cesenahome.domain.models.song.Song
 
 data class Album(
     val id: String,

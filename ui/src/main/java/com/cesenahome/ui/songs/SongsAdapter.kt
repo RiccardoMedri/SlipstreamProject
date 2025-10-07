@@ -5,7 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.paging.PagingDataAdapter
-import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.song.Song
 import com.cesenahome.ui.databinding.ItemSongBinding
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide

@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.homepage
 
 enum class HomeDestination {
     ARTISTS, ALBUMS, PLAYLISTS, SONGS

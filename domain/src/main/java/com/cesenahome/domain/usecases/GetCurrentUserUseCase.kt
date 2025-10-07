@@ -1,6 +1,6 @@
 package com.cesenahome.domain.usecases
 
-import com.cesenahome.domain.models.User
+import com.cesenahome.domain.models.login.User
 import com.cesenahome.domain.repository.LoginRepository
 import kotlinx.coroutines.flow.Flow
 

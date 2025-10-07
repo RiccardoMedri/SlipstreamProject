@@ -1,4 +1,6 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.playlist
+
+import com.cesenahome.domain.models.song.SortDirection
 
 enum class PlaylistSortField {
     NAME,

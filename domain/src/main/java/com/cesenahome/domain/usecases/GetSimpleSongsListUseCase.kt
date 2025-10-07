@@ -1,6 +1,6 @@
 package com.cesenahome.domain.usecases
 
-import com.cesenahome.domain.models.Song
+import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.repository.SongRepository
 import kotlin.Result
 

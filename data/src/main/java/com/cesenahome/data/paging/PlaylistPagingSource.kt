@@ -4,8 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toPlaylist
-import com.cesenahome.domain.models.Playlist
-import com.cesenahome.domain.models.PlaylistPagingRequest
+import com.cesenahome.domain.models.playlist.Playlist
+import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class PlaylistPagingSource(

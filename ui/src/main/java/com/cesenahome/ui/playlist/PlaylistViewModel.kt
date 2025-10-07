@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.cesenahome.domain.models.Playlist
-import com.cesenahome.domain.models.PlaylistPagingRequest
-import com.cesenahome.domain.models.PlaylistSortField
-import com.cesenahome.domain.models.PlaylistSortOption
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.playlist.Playlist
+import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
+import com.cesenahome.domain.models.playlist.PlaylistSortField
+import com.cesenahome.domain.models.playlist.PlaylistSortOption
+import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.domain.usecases.GetPagedPlaylistsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow

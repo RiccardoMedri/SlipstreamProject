@@ -6,7 +6,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.cesenahome.domain.models.Album
+import com.cesenahome.domain.models.album.Album
 import com.cesenahome.ui.databinding.ItemAlbumBinding
 
 class AlbumsAdapter(

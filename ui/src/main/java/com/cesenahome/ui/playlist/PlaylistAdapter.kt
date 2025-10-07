@@ -6,7 +6,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.cesenahome.domain.models.Playlist
+import com.cesenahome.domain.models.playlist.Playlist
 import com.cesenahome.ui.databinding.ItemPlaylistBinding
 import java.util.concurrent.TimeUnit
 

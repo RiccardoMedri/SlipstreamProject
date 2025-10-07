@@ -1,8 +1,8 @@
 package com.cesenahome.domain.repository
 
 import androidx.paging.PagingData
-import com.cesenahome.domain.models.Artist
-import com.cesenahome.domain.models.ArtistPagingRequest
+import com.cesenahome.domain.models.artist.Artist
+import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import kotlinx.coroutines.flow.Flow
 
 interface ArtistRepository {

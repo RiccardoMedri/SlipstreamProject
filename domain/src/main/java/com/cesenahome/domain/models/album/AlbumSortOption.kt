@@ -1,4 +1,6 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.album
+
+import com.cesenahome.domain.models.song.SortDirection
 
 enum class AlbumSortField {
     TITLE,

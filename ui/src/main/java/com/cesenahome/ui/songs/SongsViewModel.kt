@@ -4,11 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.cesenahome.domain.models.Song
-import com.cesenahome.domain.models.SongPagingRequest
-import com.cesenahome.domain.models.SongSortField
-import com.cesenahome.domain.models.SongSortOption
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.song.Song
+import com.cesenahome.domain.models.song.SongPagingRequest
+import com.cesenahome.domain.models.song.SongSortField
+import com.cesenahome.domain.models.song.SongSortOption
+import com.cesenahome.domain.models.song.SortDirection
+import com.cesenahome.domain.usecases.AddSongToFavouritesUseCase
 import com.cesenahome.domain.usecases.GetPagedSongsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 
 class SongsViewModel(
     private val getPagedSongsUseCase: GetPagedSongsUseCase,
+    private val addSongToFavouritesUseCase: AddSongToFavouritesUseCase,
     private val albumId: String? = null
 ) : ViewModel() {
 
@@ -52,6 +54,14 @@ class SongsViewModel(
     private val _playCommands = MutableSharedFlow<PlayCommand>(extraBufferCapacity = 1)
     val playCommands: SharedFlow<PlayCommand> = _playCommands
 
+    sealed interface FavouriteEvent {
+        data class Success(val song: Song) : FavouriteEvent
+        data class Failure(val song: Song, val reason: String?) : FavouriteEvent
+    }
+
+    private val _favouriteEvents = MutableSharedFlow<FavouriteEvent>(extraBufferCapacity = 1)
+    val favouriteEvents: SharedFlow<FavouriteEvent> = _favouriteEvents
+
     fun onSongClicked(song: Song) {
         viewModelScope.launch {
             _playCommands.emit(PlayCommand.PlaySong(song))
@@ -74,6 +84,19 @@ class SongsViewModel(
         searchQueryState.update { current ->
             val newQuery = query
             if (current == newQuery) current else newQuery
+        }
+    }
+    fun onAddSongToFavourites(song: Song) {
+        viewModelScope.launch {
+            val result = addSongToFavouritesUseCase(song.id)
+            result.fold(
+                onSuccess = {
+                    _favouriteEvents.emit(FavouriteEvent.Success(song))
+                },
+                onFailure = { error ->
+                    _favouriteEvents.emit(FavouriteEvent.Failure(song, error.message))
+                }
+            )
         }
     }
 }

@@ -4,8 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.remote.toAlbum
-import com.cesenahome.domain.models.Album
-import com.cesenahome.domain.models.AlbumPagingRequest
+import com.cesenahome.domain.models.album.Album
+import com.cesenahome.domain.models.album.AlbumPagingRequest
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class AlbumPagingSource(

@@ -1,8 +1,8 @@
 package com.cesenahome.domain.usecases
 
 import androidx.paging.PagingData
-import com.cesenahome.domain.models.Artist
-import com.cesenahome.domain.models.ArtistPagingRequest
+import com.cesenahome.domain.models.artist.Artist
+import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import com.cesenahome.domain.repository.ArtistRepository
 import kotlinx.coroutines.flow.Flow
 

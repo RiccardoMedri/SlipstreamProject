@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.cesenahome.domain.models.SessionData
+import com.cesenahome.domain.models.login.SessionData
 import com.cesenahome.domain.session.SessionStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

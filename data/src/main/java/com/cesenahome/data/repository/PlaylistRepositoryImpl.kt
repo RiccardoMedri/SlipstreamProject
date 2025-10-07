@@ -5,8 +5,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.cesenahome.data.paging.PlaylistPagingSource
 import com.cesenahome.data.remote.JellyfinApiClient
-import com.cesenahome.domain.models.Playlist
-import com.cesenahome.domain.models.PlaylistPagingRequest
+import com.cesenahome.domain.models.playlist.Playlist
+import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
 import com.cesenahome.domain.repository.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 

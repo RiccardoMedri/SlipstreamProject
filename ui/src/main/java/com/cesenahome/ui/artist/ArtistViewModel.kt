@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.cesenahome.domain.models.Artist
-import com.cesenahome.domain.models.ArtistPagingRequest
-import com.cesenahome.domain.models.ArtistSortField
-import com.cesenahome.domain.models.ArtistSortOption
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.artist.Artist
+import com.cesenahome.domain.models.artist.ArtistPagingRequest
+import com.cesenahome.domain.models.artist.ArtistSortField
+import com.cesenahome.domain.models.artist.ArtistSortOption
+import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.domain.usecases.GetPagedArtistsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

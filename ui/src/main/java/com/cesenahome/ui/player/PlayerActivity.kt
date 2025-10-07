@@ -22,7 +22,7 @@ import com.bumptech.glide.Glide
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivityPlayerBinding
 import com.cesenahome.ui.databinding.DialogQueueBottomSheetBinding
-import com.cesenahome.domain.models.QueueSong
+import com.cesenahome.domain.models.song.QueueSong
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors

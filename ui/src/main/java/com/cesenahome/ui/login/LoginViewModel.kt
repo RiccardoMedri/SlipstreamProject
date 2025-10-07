@@ -1,11 +1,9 @@
 package com.cesenahome.ui.login
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.cesenahome.domain.models.LoginResult
-import com.cesenahome.domain.models.LoginScreenState
-import com.cesenahome.domain.models.User
+import com.cesenahome.domain.models.login.LoginResult
+import com.cesenahome.domain.models.login.LoginScreenState
 import com.cesenahome.domain.usecases.GetCurrentUserUseCase
 import com.cesenahome.domain.usecases.LoginUseCase
 import com.cesenahome.domain.usecases.LogoutUseCase

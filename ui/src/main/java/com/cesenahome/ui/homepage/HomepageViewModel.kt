@@ -2,10 +2,10 @@ package com.cesenahome.ui.homepage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cesenahome.domain.models.HomeMenuItem
+import com.cesenahome.domain.models.homepage.HomeMenuItem
 import com.cesenahome.domain.usecases.GetHomepageMenuUseCase
 import com.cesenahome.domain.usecases.GetLibraryCountsUseCase
-import com.cesenahome.domain.models.HomeDestination
+import com.cesenahome.domain.models.homepage.HomeDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update

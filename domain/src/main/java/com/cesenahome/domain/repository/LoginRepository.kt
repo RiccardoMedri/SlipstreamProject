@@ -1,7 +1,7 @@
 package com.cesenahome.domain.repository
 
-import com.cesenahome.domain.models.LoginResult
-import com.cesenahome.domain.models.User
+import com.cesenahome.domain.models.login.LoginResult
+import com.cesenahome.domain.models.login.User
 import kotlinx.coroutines.flow.Flow
 
 interface LoginRepository {

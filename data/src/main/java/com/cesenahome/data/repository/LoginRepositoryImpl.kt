@@ -1,9 +1,9 @@
 package com.cesenahome.data.repository
 
 import com.cesenahome.data.remote.JellyfinApiClient
-import com.cesenahome.domain.models.LoginResult
-import com.cesenahome.domain.models.SessionData
-import com.cesenahome.domain.models.User
+import com.cesenahome.domain.models.login.LoginResult
+import com.cesenahome.domain.models.login.SessionData
+import com.cesenahome.domain.models.login.User
 import com.cesenahome.domain.repository.LoginRepository
 import com.cesenahome.domain.session.SessionStore
 import kotlinx.coroutines.Dispatchers
@@ -60,12 +60,14 @@ class LoginRepositoryImpl(
         return runCatching {
             jellyfinApiClient.initializeOrUpdateClient(saved.serverUrl)
             jellyfinApiClient.currentApi()?.update(accessToken = saved.accessToken)
+            val userUuid = jellyfinApiClient.parseUuidOrNull(saved.userId)
+                ?: error("Invalid stored user identifier")
+            jellyfinApiClient.updateAuthenticatedUser(userUuid)
             val user = User(
                 userId = saved.userId,
                 name = saved.userName,
                 serverUrl = saved.serverUrl
             )
-            jellyfinApiClient.parseUuidOrNull(saved.userId)
             _currentUser.value = user
             user
         }.fold(

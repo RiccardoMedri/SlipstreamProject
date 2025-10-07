@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.homepage
 
 data class LibraryCounts(
     val artists: Int,

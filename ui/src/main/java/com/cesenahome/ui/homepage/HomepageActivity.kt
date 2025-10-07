@@ -10,7 +10,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.databinding.ActivityHomepageBinding
-import com.cesenahome.domain.models.HomeDestination
+import com.cesenahome.domain.models.homepage.HomeDestination
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.artist.ArtistActivity
 import com.cesenahome.ui.songs.SongsActivity

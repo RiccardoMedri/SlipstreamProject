@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.login
 
 sealed class LoginResult {
     data class Success(val user: User) : LoginResult()

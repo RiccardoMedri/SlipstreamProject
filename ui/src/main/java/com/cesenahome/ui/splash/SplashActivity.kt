@@ -8,7 +8,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.LoginResult
+import com.cesenahome.domain.models.login.LoginResult
 import com.cesenahome.ui.databinding.ActivitySplashBinding
 import com.cesenahome.ui.homepage.HomepageActivity
 import com.cesenahome.ui.login.LoginActivity

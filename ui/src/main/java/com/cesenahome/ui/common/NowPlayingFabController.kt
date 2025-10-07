@@ -13,7 +13,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.cesenahome.domain.models.QueueSong
+import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.R
 import com.cesenahome.ui.player.PlayerActivity
 import com.cesenahome.ui.player.PlayerService

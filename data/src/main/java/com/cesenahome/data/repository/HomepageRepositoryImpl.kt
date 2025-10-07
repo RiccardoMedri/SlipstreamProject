@@ -2,9 +2,9 @@ package com.cesenahome.data.repository
 
 
 import com.cesenahome.data.remote.JellyfinApiClient
-import com.cesenahome.domain.models.HomeDestination
-import com.cesenahome.domain.models.HomeMenuItem
-import com.cesenahome.domain.models.LibraryCounts
+import com.cesenahome.domain.models.homepage.HomeDestination
+import com.cesenahome.domain.models.homepage.HomeMenuItem
+import com.cesenahome.domain.models.homepage.LibraryCounts
 import com.cesenahome.domain.repository.HomepageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
