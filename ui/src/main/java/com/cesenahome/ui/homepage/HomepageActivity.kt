@@ -25,7 +25,8 @@ class HomepageActivity : AppCompatActivity() {
     private val viewModel: HomepageViewModel by lazy {
         HomepageViewModel(
             getHomepageMenuUseCase = UseCaseProvider.getHomepageMenuUseCase,
-            getLibraryCountsUseCase = UseCaseProvider.getLibraryCountsUseCase
+            getLibraryCountsUseCase = UseCaseProvider.getLibraryCountsUseCase,
+            ensureFavouritePlaylistUseCase = UseCaseProvider.ensureFavouritePlaylistUseCase,
         )
     }
 

@@ -16,8 +16,6 @@ import kotlin.Result
 import kotlin.jvm.Volatile
 import kotlin.random.Random
 
-private const val FAVOURITE_PLAYLIST_NAME = "Favourites Songs"
-
 class SongRepositoryImpl(
     private val jellyfinApiClient: JellyfinApiClient
 ) : SongRepository {
@@ -74,17 +72,22 @@ class SongRepositoryImpl(
         }
     }
 
-    override suspend fun addSongToFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> =
-        runCatching {
-            jellyfinApiClient.setAsFavourite(songId, isFavourite = true)
-            jellyfinApiClient.addSongsToPlaylist(playlistId, listOf(songId))
-            Unit
-        }
+    override suspend fun addSongToFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> {
+        val markResult = jellyfinApiClient.setAsFavourite(songId, isFavourite)
+        markResult.exceptionOrNull()?.let { return Result.failure(it) }
+        val addResult = jellyfinApiClient.addSongsToPlaylist(playlistId, listOf(songId))
+        addResult.exceptionOrNull()?.let { return Result.failure(it) }
 
-    override suspend fun removeSongFromFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> =
-        runCatching {
-            jellyfinApiClient.setAsFavourite(songId, isFavourite = false)
-            jellyfinApiClient.removeSongsFromPlaylist(playlistId, listOf(songId))
-            Unit
-        }
+        return Result.success(Unit)
+    }
+
+    override suspend fun removeSongFromFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> {
+        val markResult = jellyfinApiClient.setAsFavourite(songId, isFavourite)
+        markResult.exceptionOrNull()?.let { return Result.failure(it) }
+
+        val removeResult = jellyfinApiClient.removeSongsFromPlaylist(playlistId, listOf(songId))
+        removeResult.exceptionOrNull()?.let { return Result.failure(it) }
+
+        return Result.success(Unit)
+    }
 }

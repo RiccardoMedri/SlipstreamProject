@@ -11,7 +11,7 @@ import com.cesenahome.domain.repository.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
 import kotlin.jvm.Volatile
 
-private const val FAVOURITE_PLAYLIST_NAME = "Favourites Songs"
+private const val FAVOURITE_PLAYLIST_NAME = "Favourite Songs"
 
 class PlaylistRepositoryImpl(
     private val apiClient: JellyfinApiClient,
@@ -52,7 +52,8 @@ class PlaylistRepositoryImpl(
         val playlistId = existing?.id?.toString() ?: run {
             val createResult = apiClient.createPlaylist(FAVOURITE_PLAYLIST_NAME)
             createResult.exceptionOrNull()?.let { return Result.failure(it) }
-            createResult.getOrNull() ?: return Result.failure(IllegalStateException("Playlist creation did not return an identifier"))
+            createResult.getOrNull()
+                ?: return Result.failure(IllegalStateException("Playlist creation did not return an identifier"))
         }
 
         cachedFavouritePlaylistId = playlistId

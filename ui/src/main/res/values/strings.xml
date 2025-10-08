@@ -58,6 +58,8 @@
     <string name="song_favourite_button_content_description_unselected">Add to favourites</string>
     <string name="song_favourite_add_success">%1$s added to favourites.</string>
     <string name="song_favourite_add_failure">Couldn\'t add to favourites</string>
+    <string name="song_favourite_remove_success">%1$s removed from favourites.</string>
+    <string name="song_favourite_remove_failure">Couldn\'t remove from favourites</string>
     <string name="queue_action_unavailable">Connect to the player to manage the queue.</string>
     <string name="queue_song_added_to_end">Song added to the end of the queue.</string>
     <string name="queue_song_added_next">Song will play next.</string>

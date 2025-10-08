@@ -1,11 +1,14 @@
 package com.cesenahome.ui.homepage
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cesenahome.domain.models.homepage.HomeDestination
 import com.cesenahome.domain.models.homepage.HomeMenuItem
+import com.cesenahome.domain.usecases.EnsureFavouritePlaylistUseCase
 import com.cesenahome.domain.usecases.GetHomepageMenuUseCase
 import com.cesenahome.domain.usecases.GetLibraryCountsUseCase
-import com.cesenahome.domain.models.homepage.HomeDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -14,7 +17,8 @@ import kotlinx.coroutines.launch
 
 class HomepageViewModel(
     private val getHomepageMenuUseCase: GetHomepageMenuUseCase,
-    private val getLibraryCountsUseCase: GetLibraryCountsUseCase
+    private val getLibraryCountsUseCase: GetLibraryCountsUseCase,
+    private val ensureFavouritePlaylistUseCase: EnsureFavouritePlaylistUseCase,
 ) : ViewModel() {
 
     private val _menu = MutableStateFlow<List<HomeMenuItem>>(emptyList())
@@ -25,6 +29,16 @@ class HomepageViewModel(
 
     init {
         viewModelScope.launch { _menu.value = getHomepageMenuUseCase() }
+        viewModelScope.launch {
+            val result = ensureFavouritePlaylistUseCase()
+            if (result.isFailure) {
+                Log.w(
+                    TAG,
+                    "Unable to ensure Favourite Songs playlist on homepage start",
+                    result.exceptionOrNull(),
+                )
+            }
+        }
         // optional counts fetch
         viewModelScope.launch {
             _isLoadingCounts.value = true
@@ -42,5 +56,9 @@ class HomepageViewModel(
             }
             _isLoadingCounts.value = false
         }
+    }
+
+    private companion object {
+        private const val TAG = "HomepageViewModel"
     }
 }

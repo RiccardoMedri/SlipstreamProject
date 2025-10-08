@@ -248,12 +248,37 @@ class JellyfinApiClient(
         }
 
         val api = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
-        val playlistUuid = parseUuidOrNull(playlistId) ?: return@withContext Result.failure(IllegalArgumentException("Invalid playlist identifier"))
+        val playlistUuid = parseUuidOrNull(playlistId)
+            ?: return@withContext Result.failure(IllegalArgumentException("Invalid playlist identifier"))
+        val userId = getCurrentUserId() ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
+
+        val targetItemIds = songIds.mapNotNull { parseUuidOrNull(it) }.toSet()
+        if (targetItemIds.isEmpty()) {
+            return@withContext Result.failure(IllegalArgumentException("No valid song identifiers provided"))
+        }
+
+        val playlistItems = runCatching {
+            val response by api.playlistsApi.getPlaylistItems(
+                playlistId = playlistUuid,
+                userId = userId,
+            )
+            response.items.orEmpty()
+        }.getOrElse { error ->
+            return@withContext Result.failure(error)
+        }
+
+        val entryIds = playlistItems
+            .filter { item -> item.id != null && targetItemIds.contains(item.id) }
+            .mapNotNull { it.playlistItemId }
+
+        if (entryIds.isEmpty()) {
+            return@withContext Result.success(Unit)
+        }
 
         runCatching {
             api.playlistsApi.removeItemFromPlaylist(
                 playlistId = playlistUuid.toString(),
-                entryIds = songIds
+                entryIds = entryIds
             )
             Unit
         }

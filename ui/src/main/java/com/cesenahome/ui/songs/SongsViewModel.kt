@@ -65,8 +65,8 @@ class SongsViewModel(
     val playCommands: SharedFlow<PlayCommand> = _playCommands
 
     sealed interface FavouriteEvent {
-        data class Success(val song: Song) : FavouriteEvent
-        data class Failure(val song: Song, val reason: String?) : FavouriteEvent
+        data class Success(val song: Song, val isFavourite: Boolean) : FavouriteEvent
+        data class Failure(val song: Song, val isFavourite: Boolean, val reason: String?) : FavouriteEvent
     }
 
     private val _favouriteEvents = MutableSharedFlow<FavouriteEvent>(extraBufferCapacity = 1)
@@ -96,24 +96,44 @@ class SongsViewModel(
             if (current == newQuery) current else newQuery
         }
     }
-    fun onAddSongToFavourites(song: Song) {
-        if (song.isFavorite || favouriteOverrides.value[song.id] == true) {
-            viewModelScope.launch {
-                _favouriteEvents.emit(FavouriteEvent.Success(song))
-            }
-            return
+    fun onFavouriteClick(song: Song) {
+        val overridesSnapshot = favouriteOverrides.value
+        val hadOverride = overridesSnapshot.containsKey(song.id)
+        val previousState = overridesSnapshot[song.id] ?: song.isFavorite
+        val targetState = !previousState
+
+        favouriteOverrides.update { current ->
+            val existing = current[song.id]
+            if (existing == targetState) current else current + (song.id to targetState)
         }
         viewModelScope.launch {
-            val result = addSongToFavouritesUseCase(song.id)
+            val result = addSongToFavouritesUseCase(song.id, targetState)
             result.fold(
                 onSuccess = {
-                    favouriteOverrides.update { current ->
-                        if (current[song.id] == true) current else current + (song.id to true)
-                    }
-                    _favouriteEvents.emit(FavouriteEvent.Success(song.copy(isFavorite = true)))
+                    _favouriteEvents.emit(
+                        FavouriteEvent.Success(
+                            song.copy(isFavorite = targetState),
+                            targetState,
+                        )
+                    )
                 },
                 onFailure = { error ->
-                    _favouriteEvents.emit(FavouriteEvent.Failure(song, error.message))
+                    favouriteOverrides.update { current ->
+                        val mutable = current.toMutableMap()
+                        if (hadOverride) {
+                            mutable[song.id] = previousState
+                        } else {
+                            mutable.remove(song.id)
+                        }
+                        mutable.toMap()
+                    }
+                    _favouriteEvents.emit(
+                        FavouriteEvent.Failure(
+                            song.copy(isFavorite = previousState),
+                            targetState,
+                            error.message,
+                        )
+                    )
                 }
             )
         }

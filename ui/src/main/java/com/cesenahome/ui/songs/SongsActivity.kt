@@ -98,7 +98,7 @@ class SongsActivity : AppCompatActivity() {
         adapter = SongsAdapter(
             onSongClick = { song -> viewModel.onSongClicked(song) },
             onSongOptionsClick = { song, anchor -> showSongOptionsMenu(song, anchor) },
-            onFavouriteClick = { song -> viewModel.onAddSongToFavourites(song) }
+            onFavouriteClick = { song -> viewModel.onFavouriteClick(song) }
         )
 
         binding.recyclerSongs.layoutManager = LinearLayoutManager(this)
@@ -146,14 +146,24 @@ class SongsActivity : AppCompatActivity() {
                     viewModel.favouriteEvents.collect { event ->
                         when (event) {
                             is SongsViewModel.FavouriteEvent.Success -> {
+                                val messageRes = if (event.isFavourite) {
+                                    R.string.song_favourite_add_success
+                                } else {
+                                    R.string.song_favourite_remove_success
+                                }
                                 Toast.makeText(
                                     this@SongsActivity,
-                                    getString(R.string.song_favourite_add_success, event.song.title),
+                                    getString(messageRes, event.song.title),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
                             is SongsViewModel.FavouriteEvent.Failure -> {
-                                val baseMessage = getString(R.string.song_favourite_add_failure)
+                                val baseMessageRes = if (event.isFavourite) {
+                                    R.string.song_favourite_add_failure
+                                } else {
+                                    R.string.song_favourite_remove_failure
+                                }
+                                val baseMessage = getString(baseMessageRes)
                                 val detail = event.reason?.takeIf { it.isNotBlank() }
                                 val finalMessage = detail?.let { "$baseMessage: $it" } ?: baseMessage
                                 Toast.makeText(this@SongsActivity, finalMessage, Toast.LENGTH_SHORT).show()

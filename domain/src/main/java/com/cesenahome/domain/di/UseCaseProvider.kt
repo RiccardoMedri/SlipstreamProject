@@ -19,6 +19,7 @@ object UseCaseProvider {
     lateinit var getPagedArtistsUseCase: GetPagedArtistsUseCase
     lateinit var getRandomSongUseCase: GetRandomSongUseCase
     lateinit var addSongToFavouritesUseCase: AddSongToFavouritesUseCase
+    lateinit var ensureFavouritePlaylistUseCase: EnsureFavouritePlaylistUseCase
 
 
 
@@ -38,6 +39,12 @@ object UseCaseProvider {
         getPagedAlbumUseCase = GetPagedAlbumUseCaseImpl(repositoryProvider.albumRepository)
         getPagedArtistsUseCase = GetPagedArtistsUseCaseImpl(repositoryProvider.artistRepository)
         getRandomSongUseCase = GetRandomSongUseCaseImpl(repositoryProvider.songRepository)
-        addSongToFavouritesUseCase = AddSongToFavouritesUseCaseImpl(repositoryProvider.songRepository)
+        addSongToFavouritesUseCase = AddSongToFavouritesUseCaseImpl(
+            repositoryProvider.songRepository,
+            repositoryProvider.playlistRepository,
+        )
+        ensureFavouritePlaylistUseCase = EnsureFavouritePlaylistUseCaseImpl(
+            repositoryProvider.playlistRepository,
+        )
     }
 }
