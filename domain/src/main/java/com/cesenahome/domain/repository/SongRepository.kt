@@ -9,7 +9,12 @@ import kotlin.Result
 interface SongRepository {
 
     fun pagingSongs(pageSize: Int = 200, request: SongPagingRequest): Flow<PagingData<Song>>
+
     suspend fun getSongsList(page: Int, pageSize: Int): Result<List<Song>>
+
     suspend fun getRandomSong(): Result<Song?>
-    suspend fun addSongToFavourites(songId: String): Result<Unit>
+
+    suspend fun addSongToFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit>
+
+    suspend fun removeSongFromFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit>
 }

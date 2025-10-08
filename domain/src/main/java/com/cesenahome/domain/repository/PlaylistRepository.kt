@@ -7,4 +7,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface PlaylistRepository {
     fun pagingPlaylists(pageSize: Int = 200, request: PlaylistPagingRequest): Flow<PagingData<Playlist>>
+    suspend fun ensureFavouritePlaylistId(): Result<String>
 }

@@ -1,5 +1,6 @@
 package com.cesenahome.data.remote
 
+
 import android.content.Context
 import com.cesenahome.domain.models.album.AlbumPagingRequest
 import com.cesenahome.domain.models.album.AlbumSortField
@@ -22,11 +23,14 @@ import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.api.client.extensions.playlistsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CreatePlaylistDto
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.PlaylistCreationResult
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.ImageType
@@ -40,8 +44,10 @@ class JellyfinApiClient(
         context = appContext
         clientInfo = ClientInfo(name = clientName, version = clientVersion)
     }
+
     @Volatile
     private var apiClient: ApiClient? = null
+
     @Volatile
     private var currentUserId: UUID? = null
 
@@ -49,6 +55,7 @@ class JellyfinApiClient(
         val base = normalizeServerUrl(serverUrl)
         apiClient = jellyfin.createApi(baseUrl = base)
     }
+
     suspend fun login(username: String, password: String): Result<User> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         try {
@@ -76,12 +83,19 @@ class JellyfinApiClient(
             Result.failure(Exception("Login failed: ${t.message}", t))
         }
     }
+
     fun parseUuidOrNull(id: String?): UUID? = id?.takeIf { it.isNotBlank() }?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+
     fun currentApi(): ApiClient? = apiClient
+
     suspend fun getArtistsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ARTIST)
+
     suspend fun getAlbumsCount(): Int = getCountForKinds(BaseItemKind.MUSIC_ALBUM)
+
     suspend fun getPlaylistsCount(): Int = getCountForKinds(BaseItemKind.PLAYLIST)
+
     suspend fun getSongsCount(): Int = getCountForKinds(BaseItemKind.AUDIO)
+
     fun getImage (itemId: String, imageTag: String?, maxSize: Int): String? {
         val api = currentApi() ?: return null
         val id = parseUuidOrNull(itemId) ?: return null
@@ -94,6 +108,7 @@ class JellyfinApiClient(
             quality = 100
         )
     }
+
     fun getAudio (itemId: String): String? {
         val api = currentApi() ?: return null
         val id = parseUuidOrNull(itemId) ?: return null
@@ -102,6 +117,7 @@ class JellyfinApiClient(
             static = true
         )
     }
+
     suspend fun fetchSongs(startIndex: Int, limit: Int, request: SongPagingRequest
     ): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
@@ -119,6 +135,7 @@ class JellyfinApiClient(
         )
         response.items
     }
+
     suspend fun fetchAlbums(startIndex: Int, limit: Int, request: AlbumPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         val artistUuid = parseUuidOrNull(request.artistId)
@@ -135,6 +152,7 @@ class JellyfinApiClient(
         )
         response.items
     }
+
     suspend fun fetchPlaylists(startIndex: Int, limit: Int, request: PlaylistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         val response by currentApi.itemsApi.getItems(        //playlistApi.getPlaylist has not been used as it would return a single item
@@ -149,6 +167,7 @@ class JellyfinApiClient(
         )
         response.items
     }
+
     suspend fun fetchArtists(startIndex: Int, limit: Int, request: ArtistPagingRequest): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
         val response by currentApi.itemsApi.getItems(       //think about implemting it with artistApi.getAlbumArtist or any other didicated method
@@ -163,28 +182,107 @@ class JellyfinApiClient(
         )
         response.items
     }
-    suspend fun addSongToFavourite(songId: String): Result<Unit> = withContext(Dispatchers.IO) {
-        val currentApi = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
-        val songUuid = parseUuidOrNull(songId)
-            ?: return@withContext Result.failure(IllegalArgumentException("Invalid song identifier"))
-        val userUuid = getCurrentUserId()
-            ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
 
-        try {
-            currentApi.userLibraryApi.markFavoriteItem(
-                itemId = songUuid,
-                userId = userUuid,
+    suspend fun findPlaylistByName(name: String): Result<BaseItemDto?> = withContext(Dispatchers.IO) {
+        val api = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
+        val userId = getCurrentUserId() ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
+
+        runCatching {
+            val response by api.itemsApi.getItems(
+                userId = userId,
+                includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+                searchTerm = name,
+                recursive = true,
+                limit = 25
             )
-            Result.success(Unit)
-        } catch (t: Throwable) {
-            Result.failure(t)
+            response.items.firstOrNull { it.name.equals(name, ignoreCase = true) }
+        }
+    }
+
+    suspend fun createPlaylist(name: String, songIds: List<String> = emptyList()): Result<String> = withContext(Dispatchers.IO) {
+        val api = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
+        val userId = getCurrentUserId() ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
+        val itemIds = songIds.mapNotNull { parseUuidOrNull(it) }
+
+        runCatching {
+            val response by api.playlistsApi.createPlaylist(
+                data = CreatePlaylistDto(
+                    name = name,
+                    ids = itemIds,
+                    userId = userId,
+                    mediaType = null,
+                    users = emptyList(),
+                    isPublic = false,
+                )
+            )
+            extractPlaylistId(response)
+        }
+    }
+
+    suspend fun addSongsToPlaylist(playlistId: String, songIds: List<String>): Result<Unit> = withContext(Dispatchers.IO) {
+        if (songIds.isEmpty()) {
+            return@withContext Result.success(Unit)
+        }
+
+        val api = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
+        val userId = getCurrentUserId() ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
+        val playlistUuid = parseUuidOrNull(playlistId) ?: return@withContext Result.failure(IllegalArgumentException("Invalid playlist identifier"))
+        val itemIds = songIds.mapNotNull { parseUuidOrNull(it) }
+        if (itemIds.isEmpty()) {
+            return@withContext Result.failure(IllegalArgumentException("No valid song identifiers provided"))
+        }
+
+        runCatching {
+            api.playlistsApi.addItemToPlaylist(
+                playlistId = playlistUuid,
+                userId = userId,
+                ids = itemIds
+            )
+            Unit
+        }
+    }
+
+    suspend fun removeSongsFromPlaylist(playlistId: String, songIds: List<String>): Result<Unit> = withContext(Dispatchers.IO) {
+        if (songIds.isEmpty()) {
+            return@withContext Result.success(Unit)
+        }
+
+        val api = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
+        val playlistUuid = parseUuidOrNull(playlistId) ?: return@withContext Result.failure(IllegalArgumentException("Invalid playlist identifier"))
+
+        runCatching {
+            api.playlistsApi.removeItemFromPlaylist(
+                playlistId = playlistUuid.toString(),
+                entryIds = songIds
+            )
+            Unit
+        }
+    }
+
+    suspend fun setAsFavourite(songId: String, isFavourite: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        val api = currentApi() ?: return@withContext Result.failure(IllegalStateException("ApiClient not initialized"))
+        val songUuid = parseUuidOrNull(songId) ?: return@withContext Result.failure(IllegalArgumentException("Invalid song identifier"))
+        val userUuid = getCurrentUserId() ?: return@withContext Result.failure(IllegalStateException("No authenticated user"))
+
+        runCatching {
+            if (isFavourite) {
+                api.userLibraryApi.markFavoriteItem(
+                    itemId = songUuid,
+                    userId = userUuid,
+                )
+            } else {
+                api.userLibraryApi.unmarkFavoriteItem(
+                    itemId = songUuid,
+                    userId = userUuid,
+                )
+            }
+            Unit
         }
     }
     fun clearSession() {
         apiClient?.update(accessToken = null)
         updateAuthenticatedUser(null)
     }
-
     fun updateAuthenticatedUser(userId: UUID?) {
         currentUserId = userId
     }
@@ -224,7 +322,6 @@ class JellyfinApiClient(
         AlbumSortField.YEAR -> ItemSortBy.PRODUCTION_YEAR
         AlbumSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
     }
-
     private fun ArtistSortField.toApiSortBy(): ItemSortBy = when (this) {
         ArtistSortField.NAME -> ItemSortBy.NAME
         ArtistSortField.DATE_ADDED -> ItemSortBy.DATE_CREATED
@@ -243,5 +340,7 @@ class JellyfinApiClient(
     }
     private fun getCurrentUserId(): UUID? = currentUserId
     private fun accessToken(): String? = apiClient?.accessToken
-
+    private fun extractPlaylistId(result: PlaylistCreationResult): String {
+        return result.id ?: throw IllegalStateException("Playlist creation returned no identifier")
+    }
 }

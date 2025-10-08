@@ -10,7 +10,7 @@ interface AddSongToFavouritesUseCase {
 class AddSongToFavouritesUseCaseImpl(
     private val songRepository: SongRepository,
 ) : AddSongToFavouritesUseCase {
-    override suspend fun invoke(songId: String): Result<Unit> {
+    override suspend fun invoke(songId: String, ): Result<Unit> {
         return songRepository.addSongToFavourites(songId)
     }
 }

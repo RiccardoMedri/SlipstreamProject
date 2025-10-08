@@ -16,6 +16,8 @@ import kotlin.Result
 import kotlin.jvm.Volatile
 import kotlin.random.Random
 
+private const val FAVOURITE_PLAYLIST_NAME = "Favourites Songs"
+
 class SongRepositoryImpl(
     private val jellyfinApiClient: JellyfinApiClient
 ) : SongRepository {
@@ -72,7 +74,17 @@ class SongRepositoryImpl(
         }
     }
 
-    override suspend fun addSongToFavourites(songId: String): Result<Unit> {
-        return jellyfinApiClient.addSongToFavourite(songId)
-    }
+    override suspend fun addSongToFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> =
+        runCatching {
+            jellyfinApiClient.setAsFavourite(songId, isFavourite = true)
+            jellyfinApiClient.addSongsToPlaylist(playlistId, listOf(songId))
+            Unit
+        }
+
+    override suspend fun removeSongFromFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> =
+        runCatching {
+            jellyfinApiClient.setAsFavourite(songId, isFavourite = false)
+            jellyfinApiClient.removeSongsFromPlaylist(playlistId, listOf(songId))
+            Unit
+        }
 }
