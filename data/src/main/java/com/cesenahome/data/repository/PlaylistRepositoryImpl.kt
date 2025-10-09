@@ -45,19 +45,70 @@ class PlaylistRepositoryImpl(
     override suspend fun ensureFavouritePlaylistId(): Result<String> {
         cachedFavouritePlaylistId?.let { return Result.success(it) }
 
-        val existingResult = apiClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
-        existingResult.exceptionOrNull()?.let { return Result.failure(it) }
-        val existing = existingResult.getOrNull()
+        val resolveResult = resolveFavouritePlaylistId()
+        resolveResult.exceptionOrNull()?.let { return Result.failure(it) }
+        val playlistId = resolveResult.getOrNull()
+            ?: return Result.failure(IllegalStateException("Unable to resolve favourites playlist identifier"))
 
-        val playlistId = existing?.id?.toString() ?: run {
-            val createResult = apiClient.createPlaylist(FAVOURITE_PLAYLIST_NAME)
-            createResult.exceptionOrNull()?.let { return Result.failure(it) }
-            createResult.getOrNull()
-                ?: return Result.failure(IllegalStateException("Playlist creation did not return an identifier"))
-        }
+        val syncResult = syncFavouritePlaylist(playlistId)
+        syncResult.exceptionOrNull()?.let { return Result.failure(it) }
 
         cachedFavouritePlaylistId = playlistId
 
         return Result.success(playlistId)
+    }
+
+    private suspend fun resolveFavouritePlaylistId(): Result<String> {
+        val existingResult = apiClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
+        existingResult.exceptionOrNull()?.let { return Result.failure(it) }
+
+        existingResult.getOrNull()?.id?.toString()
+            ?.let { normalizePlaylistId(it) }
+            ?.let { return Result.success(it) }
+
+        val createResult = apiClient.createPlaylist(FAVOURITE_PLAYLIST_NAME)
+        createResult.exceptionOrNull()?.let { return Result.failure(it) }
+
+        val createdId = createResult.getOrNull()?.let { normalizePlaylistId(it) }
+        if (createdId != null) {
+            return Result.success(createdId)
+        }
+
+        val refreshedResult = apiClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
+        refreshedResult.exceptionOrNull()?.let { return Result.failure(it) }
+
+        val refreshedId = refreshedResult.getOrNull()?.id?.toString()?.let { normalizePlaylistId(it) }
+
+        return refreshedId?.let { Result.success(it) }
+            ?: Result.failure(IllegalStateException("Playlist creation did not return a valid identifier"))
+    }
+
+    private suspend fun syncFavouritePlaylist(playlistId: String): Result<Unit> {
+        val favouritesResult = apiClient.fetchFavouriteSongIds()
+        favouritesResult.exceptionOrNull()?.let { return Result.failure(it) }
+        val favouriteIds = favouritesResult.getOrNull()?.toSet() ?: emptySet()
+
+        val playlistSongsResult = apiClient.fetchPlaylistSongIds(playlistId)
+        playlistSongsResult.exceptionOrNull()?.let { return Result.failure(it) }
+        val playlistSongIds = playlistSongsResult.getOrNull()?.toSet() ?: emptySet()
+
+        val songsToAdd = favouriteIds - playlistSongIds
+        val songsToRemove = playlistSongIds - favouriteIds
+
+        if (songsToAdd.isNotEmpty()) {
+            val addResult = apiClient.addSongsToPlaylist(playlistId, songsToAdd.toList())
+            addResult.exceptionOrNull()?.let { return Result.failure(it) }
+        }
+
+        if (songsToRemove.isNotEmpty()) {
+            val removeResult = apiClient.removeSongsFromPlaylist(playlistId, songsToRemove.toList())
+            removeResult.exceptionOrNull()?.let { return Result.failure(it) }
+        }
+
+        return Result.success(Unit)
+    }
+
+    private fun normalizePlaylistId(rawId: String): String? {
+        return apiClient.parseUuidOrNull(rawId)?.toString()
     }
 }
