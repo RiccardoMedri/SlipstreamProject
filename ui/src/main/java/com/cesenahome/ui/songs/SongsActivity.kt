@@ -48,16 +48,28 @@ class SongsActivity : AppCompatActivity() {
     private val albumId: String? by lazy {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
+    private val albumTitle: String? by lazy {
+        intent.getStringExtra(EXTRA_ALBUM_TITLE)
+    }
+    private val playlistId: String? by lazy {
+        intent.getStringExtra(EXTRA_PLAYLIST_ID)
+    }
+    private val playlistName: String? by lazy {
+        intent.getStringExtra(EXTRA_PLAYLIST_NAME)
+    }
     private val viewModel: SongsViewModel by lazy {
         SongsViewModel(
             UseCaseProvider.getPagedSongsUseCase,
             UseCaseProvider.addSongToFavouritesUseCase,
-            albumId
+            albumId,
+            playlistId
         )
     }
     companion object {
         const val EXTRA_ALBUM_ID = "extra_album_id"
         const val EXTRA_ALBUM_TITLE = "extra_album_title"
+        const val EXTRA_PLAYLIST_ID = "extra_playlist_id"
+        const val EXTRA_PLAYLIST_NAME = "extra_playlist_name"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,7 +87,9 @@ class SongsActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
-        if (albumId == null) {
+        playlistName?.takeIf { it.isNotBlank() }?.let { binding.toolbar.title = it }
+        albumTitle?.takeIf { it.isNotBlank() && playlistName.isNullOrBlank() }?.let { binding.toolbar.title = it }
+        if (albumId == null && playlistId == null) {
             binding.songToolbarFilters.root.isVisible = true
             binding.toolbar.setupSearchMenu(
                 queryHint = getString(R.string.search_hint_songs),

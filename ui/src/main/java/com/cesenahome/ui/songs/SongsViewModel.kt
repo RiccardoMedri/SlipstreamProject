@@ -26,7 +26,8 @@ import kotlinx.coroutines.launch
 class SongsViewModel(
     private val getPagedSongsUseCase: GetPagedSongsUseCase,
     private val addSongToFavouritesUseCase: AddSongToFavouritesUseCase,
-    private val albumId: String? = null
+    private val albumId: String? = null,
+    private val playlistId: String? = null,
 ) : ViewModel() {
 
     private val sortOptionState = MutableStateFlow(SongSortOption())
@@ -43,8 +44,13 @@ class SongsViewModel(
             getPagedSongsUseCase(
                 SongPagingRequest(
                     albumId = albumId,
+                    playlistId = playlistId,
                     sortOption = sortOption,
-                    searchQuery = if (albumId == null) query.takeIf { it.isNotBlank() } else null
+                    searchQuery = if (albumId == null && playlistId == null) {
+                        query.takeIf { it.isNotBlank() }
+                    } else {
+                        null
+                    }
                 )
             )
         }
@@ -90,7 +96,7 @@ class SongsViewModel(
         }
     }
     fun onSearchQueryChanged(query: String) {
-        if (albumId != null) return
+        if (albumId != null || playlistId != null) return
         searchQueryState.update { current ->
             val newQuery = query
             if (current == newQuery) current else newQuery

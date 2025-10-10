@@ -1,5 +1,6 @@
 package com.cesenahome.ui.playlist
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -21,6 +22,7 @@ import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivityPlaylistsBinding
+import com.cesenahome.ui.songs.SongsActivity
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -102,11 +104,11 @@ class PlaylistActivity : AppCompatActivity() {
                     viewModel.commands.collect { command ->
                         when (command) {
                             is PlaylistViewModel.Command.OpenPlaylist -> {
-                                Toast.makeText(
-                                    this@PlaylistActivity,
-                                    getString(R.string.title_playlists) + ": " + command.playlist.name,
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                val intent = Intent(this@PlaylistActivity, SongsActivity::class.java).apply {
+                                    putExtra(SongsActivity.EXTRA_PLAYLIST_ID, command.playlist.id)
+                                    putExtra(SongsActivity.EXTRA_PLAYLIST_NAME, command.playlist.name)
+                                }
+                                startActivity(intent)
                             }
                         }
                     }

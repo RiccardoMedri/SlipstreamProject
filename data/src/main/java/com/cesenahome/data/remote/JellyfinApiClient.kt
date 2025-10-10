@@ -122,7 +122,9 @@ class JellyfinApiClient(
     suspend fun fetchSongs(startIndex: Int, limit: Int, request: SongPagingRequest
     ): List<BaseItemDto> = withContext(Dispatchers.IO) {
         val currentApi = currentApi() ?: error("ApiClient not initialized")
-        val parentUuid = parseUuidOrNull(request.albumId)
+        val albumUuid = parseUuidOrNull(request.albumId)
+        val playlistUuid = parseUuidOrNull(request.playlistId)
+        val parentUuid = albumUuid ?: playlistUuid
         val response by currentApi.itemsApi.getItems(
             userId = getCurrentUserId(),
             parentId = parentUuid,
