@@ -24,7 +24,7 @@
         android:layout_marginStart="12dp"
         app:layout_constraintStart_toEndOf="@id/cover"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/trailing" />
+        app:layout_constraintEnd_toStartOf="@id/downloadIndicator" />
 
     <TextView
         android:id="@+id/subtitle"
@@ -34,7 +34,7 @@
         android:layout_marginEnd="8dp"
         app:layout_constraintStart_toStartOf="@id/title"
         app:layout_constraintTop_toBottomOf="@id/title"
-        app:layout_constraintEnd_toStartOf="@id/trailing"
+        app:layout_constraintEnd_toStartOf="@id/downloadIndicator"
         android:ellipsize="end"
         android:maxLines="1" />
 
@@ -43,6 +43,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toStartOf="@id/downloadIndicator"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/downloadIndicator"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginEnd="4dp"
+        android:contentDescription="@string/cd_downloaded_indicator"
+        android:src="@drawable/ic_downloaded"
+        android:visibility="gone"
         app:layout_constraintEnd_toStartOf="@id/favouriteButton"
         app:layout_constraintTop_toTopOf="parent" />
 

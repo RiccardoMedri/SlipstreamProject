@@ -3,6 +3,7 @@ package com.cesenahome.ui.songs
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -45,6 +46,7 @@ class SongsActivity : AppCompatActivity() {
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController?
         get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
+    private var downloadMenuItem: MenuItem? = null
     private val albumId: String? by lazy {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
@@ -61,6 +63,13 @@ class SongsActivity : AppCompatActivity() {
         SongsViewModel(
             UseCaseProvider.getPagedSongsUseCase,
             UseCaseProvider.addSongToFavouritesUseCase,
+            UseCaseProvider.observeDownloadedSongIdsUseCase,
+            UseCaseProvider.observeDownloadedAlbumIdsUseCase,
+            UseCaseProvider.observeDownloadedPlaylistIdsUseCase,
+            UseCaseProvider.downloadAlbumUseCase,
+            UseCaseProvider.removeAlbumDownloadUseCase,
+            UseCaseProvider.downloadPlaylistUseCase,
+            UseCaseProvider.removePlaylistDownloadUseCase,
             albumId,
             playlistId
         )
@@ -105,6 +114,16 @@ class SongsActivity : AppCompatActivity() {
         } else {
             binding.songToolbarFilters.root.isVisible = false
             binding.toolbar.menu.clear()
+            binding.toolbar.inflateMenu(R.menu.menu_collection_download)
+            downloadMenuItem = binding.toolbar.menu.findItem(R.id.action_toggle_download)
+            binding.toolbar.setOnMenuItemClickListener { item ->
+                if (item.itemId == R.id.action_toggle_download) {
+                    viewModel.onToggleDownloadRequested()
+                    true
+                } else {
+                    false
+                }
+            }
         }
     }
 
@@ -154,6 +173,37 @@ class SongsActivity : AppCompatActivity() {
                 launch {
                     viewModel.sortState.collect { sortOption ->
                         updateSortButtons(sortOption.field, sortOption.direction)
+                    }
+                }
+                launch {
+                    viewModel.collectionDownloadState.collect { state ->
+                        updateDownloadMenu(state)
+                    }
+                }
+                launch {
+                    viewModel.downloadEvents.collect { event ->
+                        when (event) {
+                            is SongsViewModel.DownloadEvent.Success -> {
+                                val messageRes = if (event.downloaded) {
+                                    R.string.download_started
+                                } else {
+                                    R.string.download_removed
+                                }
+                                Toast.makeText(
+                                    this@SongsActivity,
+                                    getString(messageRes),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            is SongsViewModel.DownloadEvent.Failure -> {
+                                val detail = event.reason?.takeIf { it.isNotBlank() } ?: getString(R.string.unknown)
+                                Toast.makeText(
+                                    this@SongsActivity,
+                                    getString(R.string.download_failed, detail),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
                     }
                 }
                 launch {
@@ -215,6 +265,27 @@ class SongsActivity : AppCompatActivity() {
         binding.songToolbarFilters.buttonSortOrder.text = getString(R.string.sort_order_label, getString(orderLabelRes))
         binding.songToolbarFilters.buttonSortField.contentDescription = binding.songToolbarFilters.buttonSortField.text
         binding.songToolbarFilters.buttonSortOrder.contentDescription = binding.songToolbarFilters.buttonSortOrder.text
+    }
+
+    private fun updateDownloadMenu(state: SongsViewModel.CollectionDownloadState?) {
+        val item = downloadMenuItem ?: binding.toolbar.menu.findItem(R.id.action_toggle_download)?.also {
+            downloadMenuItem = it
+        }
+        if (state == null) {
+            item?.isVisible = false
+            return
+        }
+        item?.let { menuItem ->
+            menuItem.isVisible = true
+            menuItem.isEnabled = !state.inProgress
+            if (state.isDownloaded) {
+                menuItem.setIcon(R.drawable.ic_downloaded)
+                menuItem.title = getString(R.string.menu_remove_download)
+            } else {
+                menuItem.setIcon(R.drawable.ic_download)
+                menuItem.title = getString(R.string.menu_download_collection)
+            }
+        }
     }
     private fun showSortFieldMenu(anchor: View) {
         val popup = PopupMenu(this, anchor)

@@ -66,4 +66,10 @@
     <string name="player_show_queue">Show queue</string>
     <string name="player_queue_empty">The queue is currently empty.</string>
     <string name="player_queue_drag_hint">Press and hold for 1 second, then drag to reorder songs.</string>
+    <string name="cd_downloaded_indicator">Downloaded indicator</string>
+    <string name="menu_download_collection">Download for offline</string>
+    <string name="menu_remove_download">Remove download</string>
+    <string name="download_started">Download started</string>
+    <string name="download_removed">Download removed</string>
+    <string name="download_failed">Unable to update download: %1$s</string>
 </resources>

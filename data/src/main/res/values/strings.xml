@@ -1,0 +1,4 @@
+<resources>
+    <string name="download_channel_name">Offline downloads</string>
+    <string name="download_channel_description">Offline downloads</string>
+</resources>

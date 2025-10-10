@@ -19,7 +19,8 @@ fun BaseItemDto.toSong(apiClient: JellyfinApiClient): Song {
         artist = this.artists?.firstOrNull(),
         durationMs = ticks?.let { it / 10_000L },
         artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 256),
-        isFavorite = this.userData?.isFavorite == true
+        isFavorite = this.userData?.isFavorite == true,
+        isDownloaded = false,
     )
 }
 
@@ -33,7 +34,8 @@ fun BaseItemDto.toAlbum(apiClient: JellyfinApiClient): Album {
         title = this.name.orEmpty(),
         artist = albumArtistName,
         artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 1080),
-        songs = emptyList()
+        songs = emptyList(),
+        isDownloaded = false,
     )
 }
 
@@ -60,5 +62,6 @@ fun BaseItemDto.toPlaylist(apiClient: JellyfinApiClient): Playlist {
         songCount = this.songCount ?: this.childCount,
         durationMs = ticks?.let { it / 10_000L },
         artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 512),
+        isDownloaded = false,
     )
 }

@@ -3,6 +3,7 @@ package com.cesenahome.ui.songs
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -41,6 +42,8 @@ class SongsAdapter(
             .load(item.artworkUrl)
             .centerCrop()
             .into(holder.binding.cover)
+
+        holder.binding.downloadIndicator.isVisible = item.isDownloaded
 
         holder.itemView.setOnClickListener {
             onSongClick.invoke(item)

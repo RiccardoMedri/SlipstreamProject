@@ -33,7 +33,11 @@ class AlbumActivity : AppCompatActivity() {
         intent.getStringExtra(EXTRA_ARTIST_ID)
     }
     private val viewModel: AlbumViewModel by lazy {
-        AlbumViewModel(UseCaseProvider.getPagedAlbumUseCase, artistId)
+        AlbumViewModel(
+            UseCaseProvider.getPagedAlbumUseCase,
+            UseCaseProvider.observeDownloadedAlbumIdsUseCase,
+            artistId
+        )
     }
     companion object {
         const val EXTRA_ARTIST_ID = "extra_artist_id"

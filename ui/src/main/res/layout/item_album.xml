@@ -23,6 +23,19 @@
             app:layout_constraintEnd_toEndOf="parent"
             tools:srcCompat="@tools:sample/avatars" />
 
+        <ImageView
+            android:id="@+id/download_indicator"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_margin="8dp"
+            android:background="@drawable/item_download_indicator_background"
+            android:padding="2dp"
+            android:contentDescription="@string/cd_downloaded_indicator"
+            android:src="@drawable/ic_downloaded"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="@id/album_artwork"
+            app:layout_constraintTop_toTopOf="@id/album_artwork" />
+
         <TextView
             android:id="@+id/album_title"
             android:layout_width="0dp"

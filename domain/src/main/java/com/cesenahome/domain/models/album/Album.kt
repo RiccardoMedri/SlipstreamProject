@@ -7,5 +7,6 @@ data class Album(
     val title: String,
     val artist: String?,
     val artworkUrl: String?,
-    val songs: List<Song>
+    val songs: List<Song>,
+    val isDownloaded: Boolean = false,
 )

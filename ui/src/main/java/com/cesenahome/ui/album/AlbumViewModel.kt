@@ -10,6 +10,7 @@ import com.cesenahome.domain.models.album.AlbumSortField
 import com.cesenahome.domain.models.album.AlbumSortOption
 import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.domain.usecases.GetPagedAlbumUseCase
+import com.cesenahome.domain.usecases.ObserveDownloadedAlbumIdsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
+import androidx.paging.map
 
 class AlbumViewModel(
     private val getPagedAlbumUseCase: GetPagedAlbumUseCase,
+    observeDownloadedAlbumIdsUseCase: ObserveDownloadedAlbumIdsUseCase,
     private val artistId: String? = null
 ): ViewModel() {
     private val defaultSort = if (artistId == null) {
@@ -33,7 +36,9 @@ class AlbumViewModel(
     val sortState: StateFlow<AlbumSortOption> = sortOptionState.asStateFlow()
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
-    val pagedAlbums: Flow<PagingData<Album>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
+    private val downloadedAlbumIds = observeDownloadedAlbumIdsUseCase()
+
+    private val basePagedAlbums: Flow<PagingData<Album>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
         sortOption to query
     }
         .flatMapLatest { (sortOption, query) ->
@@ -46,6 +51,17 @@ class AlbumViewModel(
             )
         }
         .cachedIn(viewModelScope)
+
+    val pagedAlbums: Flow<PagingData<Album>> = basePagedAlbums
+        .combine(downloadedAlbumIds) { pagingData, downloaded ->
+            pagingData.map { album ->
+                if (album.isDownloaded == downloaded.contains(album.id)) {
+                    album
+                } else {
+                    album.copy(isDownloaded = downloaded.contains(album.id))
+                }
+            }
+        }
 
     fun onSortFieldSelected(field: AlbumSortField) {
         sortOptionState.update { current ->

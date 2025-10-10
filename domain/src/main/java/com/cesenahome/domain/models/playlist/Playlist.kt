@@ -6,4 +6,5 @@ data class Playlist(
     val songCount: Int?,
     val durationMs: Long?,
     val artworkUrl: String?,
+    val isDownloaded: Boolean = false,
 )

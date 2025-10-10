@@ -20,6 +20,13 @@ object UseCaseProvider {
     lateinit var getRandomSongUseCase: GetRandomSongUseCase
     lateinit var addSongToFavouritesUseCase: AddSongToFavouritesUseCase
     lateinit var ensureFavouritePlaylistUseCase: EnsureFavouritePlaylistUseCase
+    lateinit var downloadAlbumUseCase: DownloadAlbumUseCase
+    lateinit var removeAlbumDownloadUseCase: RemoveAlbumDownloadUseCase
+    lateinit var downloadPlaylistUseCase: DownloadPlaylistUseCase
+    lateinit var removePlaylistDownloadUseCase: RemovePlaylistDownloadUseCase
+    lateinit var observeDownloadedSongIdsUseCase: ObserveDownloadedSongIdsUseCase
+    lateinit var observeDownloadedAlbumIdsUseCase: ObserveDownloadedAlbumIdsUseCase
+    lateinit var observeDownloadedPlaylistIdsUseCase: ObserveDownloadedPlaylistIdsUseCase
 
 
 
@@ -46,5 +53,12 @@ object UseCaseProvider {
         ensureFavouritePlaylistUseCase = EnsureFavouritePlaylistUseCaseImpl(
             repositoryProvider.playlistRepository,
         )
+        downloadAlbumUseCase = DownloadAlbumUseCaseImpl(repositoryProvider.downloadRepository)
+        removeAlbumDownloadUseCase = RemoveAlbumDownloadUseCaseImpl(repositoryProvider.downloadRepository)
+        downloadPlaylistUseCase = DownloadPlaylistUseCaseImpl(repositoryProvider.downloadRepository)
+        removePlaylistDownloadUseCase = RemovePlaylistDownloadUseCaseImpl(repositoryProvider.downloadRepository)
+        observeDownloadedSongIdsUseCase = ObserveDownloadedSongIdsUseCaseImpl(repositoryProvider.downloadRepository)
+        observeDownloadedAlbumIdsUseCase = ObserveDownloadedAlbumIdsUseCaseImpl(repositoryProvider.downloadRepository)
+        observeDownloadedPlaylistIdsUseCase = ObserveDownloadedPlaylistIdsUseCaseImpl(repositoryProvider.downloadRepository)
     }
 }

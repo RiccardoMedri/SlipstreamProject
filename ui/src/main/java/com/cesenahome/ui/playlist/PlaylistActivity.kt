@@ -35,6 +35,7 @@ class PlaylistActivity : AppCompatActivity() {
     private val viewModel: PlaylistViewModel by lazy {
         PlaylistViewModel(
             getPagedPlaylistsUseCase = UseCaseProvider.getPagedPlaylistsUseCase,
+            observeDownloadedPlaylistIdsUseCase = UseCaseProvider.observeDownloadedPlaylistIdsUseCase,
         )
     }
 

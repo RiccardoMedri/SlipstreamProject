@@ -12,20 +12,36 @@ import com.cesenahome.domain.models.song.SongSortOption
 import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.domain.usecases.AddSongToFavouritesUseCase
 import com.cesenahome.domain.usecases.GetPagedSongsUseCase
+import com.cesenahome.domain.usecases.DownloadAlbumUseCase
+import com.cesenahome.domain.usecases.DownloadPlaylistUseCase
+import com.cesenahome.domain.usecases.ObserveDownloadedAlbumIdsUseCase
+import com.cesenahome.domain.usecases.ObserveDownloadedPlaylistIdsUseCase
+import com.cesenahome.domain.usecases.ObserveDownloadedSongIdsUseCase
+import com.cesenahome.domain.usecases.RemoveAlbumDownloadUseCase
+import com.cesenahome.domain.usecases.RemovePlaylistDownloadUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SongsViewModel(
     private val getPagedSongsUseCase: GetPagedSongsUseCase,
     private val addSongToFavouritesUseCase: AddSongToFavouritesUseCase,
+    private val observeDownloadedSongIdsUseCase: ObserveDownloadedSongIdsUseCase,
+    private val observeDownloadedAlbumIdsUseCase: ObserveDownloadedAlbumIdsUseCase,
+    private val observeDownloadedPlaylistIdsUseCase: ObserveDownloadedPlaylistIdsUseCase,
+    private val downloadAlbumUseCase: DownloadAlbumUseCase,
+    private val removeAlbumDownloadUseCase: RemoveAlbumDownloadUseCase,
+    private val downloadPlaylistUseCase: DownloadPlaylistUseCase,
+    private val removePlaylistDownloadUseCase: RemovePlaylistDownloadUseCase,
     private val albumId: String? = null,
     private val playlistId: String? = null,
 ) : ViewModel() {
@@ -36,6 +52,11 @@ class SongsViewModel(
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
     private val favouriteOverrides = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+
+    private val downloadedSongIds = observeDownloadedSongIdsUseCase()
+    private val downloadedAlbumIds = observeDownloadedAlbumIdsUseCase()
+    private val downloadedPlaylistIds = observeDownloadedPlaylistIdsUseCase()
+    private val downloadOperationInProgress = MutableStateFlow(false)
 
     private val basePagedSongs: Flow<PagingData<Song>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
         sortOption to query
@@ -55,13 +76,22 @@ class SongsViewModel(
             )
         }
         .cachedIn(viewModelScope)
-    val pagedSongs: Flow<PagingData<Song>> = basePagedSongs
-        .combine(favouriteOverrides) { pagingData, overrides ->
-            pagingData.map { song ->
-                val override = overrides[song.id]
-                if (override == null) song else song.copy(isFavorite = override)
+    val pagedSongs: Flow<PagingData<Song>> = combine(
+        basePagedSongs,
+        favouriteOverrides,
+        downloadedSongIds,
+    ) { pagingData, overrides, downloadedIds ->
+        pagingData.map { song ->
+            val override = overrides[song.id]
+            val adjustedFavourite = if (override == null) song else song.copy(isFavorite = override)
+            val isDownloaded = downloadedIds.contains(adjustedFavourite.id)
+            if (adjustedFavourite.isDownloaded == isDownloaded) {
+                adjustedFavourite
+            } else {
+                adjustedFavourite.copy(isDownloaded = isDownloaded)
             }
         }
+    }
 
     sealed interface PlayCommand {
         data class PlaySong(val song: Song) : PlayCommand
@@ -77,6 +107,28 @@ class SongsViewModel(
 
     private val _favouriteEvents = MutableSharedFlow<FavouriteEvent>(extraBufferCapacity = 1)
     val favouriteEvents: SharedFlow<FavouriteEvent> = _favouriteEvents
+
+    data class CollectionDownloadState(val isDownloaded: Boolean, val inProgress: Boolean)
+
+    sealed interface DownloadEvent {
+        data class Success(val downloaded: Boolean) : DownloadEvent
+        data class Failure(val reason: String?) : DownloadEvent
+    }
+
+    private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 1)
+    val downloadEvents: SharedFlow<DownloadEvent> = _downloadEvents
+
+    val collectionDownloadState: StateFlow<CollectionDownloadState?> = combine(
+        downloadedAlbumIds,
+        downloadedPlaylistIds,
+        downloadOperationInProgress,
+    ) { albumIds, playlistIds, inProgress ->
+        when {
+            albumId != null -> CollectionDownloadState(albumIds.contains(albumId), inProgress)
+            playlistId != null -> CollectionDownloadState(playlistIds.contains(playlistId), inProgress)
+            else -> null
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun onSongClicked(song: Song) {
         viewModelScope.launch {
@@ -142,6 +194,35 @@ class SongsViewModel(
                     )
                 }
             )
+        }
+    }
+    fun onToggleDownloadRequested() {
+        if (downloadOperationInProgress.value) return
+        val state = collectionDownloadState.value ?: return
+        val shouldDownload = !state.isDownloaded
+        val targetAlbum = albumId
+        val targetPlaylist = playlistId
+        if (targetAlbum == null && targetPlaylist == null) return
+        downloadOperationInProgress.value = true
+        viewModelScope.launch {
+            val result = when {
+                targetAlbum != null -> {
+                    if (shouldDownload) downloadAlbumUseCase(targetAlbum) else removeAlbumDownloadUseCase(targetAlbum)
+                }
+                targetPlaylist != null -> {
+                    if (shouldDownload) downloadPlaylistUseCase(targetPlaylist) else removePlaylistDownloadUseCase(targetPlaylist)
+                }
+                else -> Result.failure(IllegalStateException("No collection to download"))
+            }
+            result.fold(
+                onSuccess = {
+                    _downloadEvents.emit(DownloadEvent.Success(shouldDownload))
+                },
+                onFailure = { error ->
+                    _downloadEvents.emit(DownloadEvent.Failure(error.message))
+                }
+            )
+            downloadOperationInProgress.value = false
         }
     }
 }

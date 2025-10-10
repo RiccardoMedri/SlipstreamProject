@@ -2,6 +2,7 @@ package com.cesenahome.ui.playlist
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -37,6 +38,7 @@ class PlaylistAdapter(
                 .load(playlist.artworkUrl)
                 .centerCrop()
                 .into(cover)
+            downloadIndicator.isVisible = playlist.isDownloaded
         }
         holder.itemView.setOnClickListener { onPlaylistClick.invoke(playlist) }
     }

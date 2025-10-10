@@ -7,6 +7,7 @@ import com.cesenahome.domain.repository.LoginRepository
 import com.cesenahome.domain.repository.SongRepository
 import com.cesenahome.domain.repository.PlayerRepository
 import com.cesenahome.domain.repository.PlaylistRepository
+import com.cesenahome.domain.repository.DownloadRepository
 
 interface RepositoryProvider {
     val loginRepository: LoginRepository
@@ -16,4 +17,5 @@ interface RepositoryProvider {
     val albumRepository: AlbumRepository
     val artistRepository: ArtistRepository
     val playlistRepository: PlaylistRepository
+    val downloadRepository: DownloadRepository
 }

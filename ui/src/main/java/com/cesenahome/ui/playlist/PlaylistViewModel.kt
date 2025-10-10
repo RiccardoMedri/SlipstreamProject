@@ -10,6 +10,7 @@ import com.cesenahome.domain.models.playlist.PlaylistSortField
 import com.cesenahome.domain.models.playlist.PlaylistSortOption
 import com.cesenahome.domain.models.song.SortDirection
 import com.cesenahome.domain.usecases.GetPagedPlaylistsUseCase
+import com.cesenahome.domain.usecases.ObserveDownloadedPlaylistIdsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,9 +21,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.paging.map
 
 class PlaylistViewModel(
     private val getPagedPlaylistsUseCase: GetPagedPlaylistsUseCase,
+    observeDownloadedPlaylistIdsUseCase: ObserveDownloadedPlaylistIdsUseCase,
 ) : ViewModel() {
 
     private val sortState = MutableStateFlow(PlaylistSortOption())
@@ -31,7 +34,9 @@ class PlaylistViewModel(
     val sortOption: StateFlow<PlaylistSortOption> = sortState.asStateFlow()
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
-    val pagedPlaylists: Flow<PagingData<Playlist>> = combine(sortState, searchQueryState) { sort, query ->
+    private val downloadedPlaylistIds = observeDownloadedPlaylistIdsUseCase()
+
+    private val basePagedPlaylists: Flow<PagingData<Playlist>> = combine(sortState, searchQueryState) { sort, query ->
         sort to query
     }
         .flatMapLatest { (sortOption, query) ->
@@ -43,6 +48,17 @@ class PlaylistViewModel(
             )
         }
         .cachedIn(viewModelScope)
+
+    val pagedPlaylists: Flow<PagingData<Playlist>> = basePagedPlaylists
+        .combine(downloadedPlaylistIds) { pagingData, downloaded ->
+            pagingData.map { playlist ->
+                if (playlist.isDownloaded == downloaded.contains(playlist.id)) {
+                    playlist
+                } else {
+                    playlist.copy(isDownloaded = downloaded.contains(playlist.id))
+                }
+            }
+        }
 
     sealed interface Command {
         data class OpenPlaylist(val playlist: Playlist) : Command

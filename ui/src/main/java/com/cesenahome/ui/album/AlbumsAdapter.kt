@@ -2,6 +2,7 @@ package com.cesenahome.ui.album
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -38,6 +39,8 @@ class AlbumsAdapter(
             Glide.with(holder.binding.albumArtwork)
                 .load(it.artworkUrl)
                 .into(holder.binding.albumArtwork)
+
+            holder.binding.downloadIndicator.isVisible = it.isDownloaded
 
             holder.itemView.setOnClickListener { _ ->
                 onAlbumClick(it)
