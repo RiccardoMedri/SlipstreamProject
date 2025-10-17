@@ -39,6 +39,7 @@ internal object DownloadComponents {
     @Volatile
     private var notificationHelper: DownloadNotificationHelper? = null
 
+    //Creates a DownloadManager with the application's context
     fun getDownloadManager(context: Context): DownloadManager {
         val appContext = context.applicationContext
         return downloadManager ?: synchronized(lock) {

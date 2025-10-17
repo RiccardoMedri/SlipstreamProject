@@ -156,6 +156,7 @@ class DownloadRepositoryImpl(
                 Unit
             }
         }
+
     //Performs the api call to fetch all songs from the request
     //For each of the retrievd songs it fetch the audio url and creates a DownloadSong object
     private suspend fun fetchAllSongs(type: CollectionType, collectionId: String): List<DownloadSong> {
@@ -190,6 +191,7 @@ class DownloadRepositoryImpl(
     private fun enqueueDownload(song: DownloadSong, type: CollectionType, collectionId: String) {
         val requestId = requestIdForSong(song.id)
         val existing = try {
+            //It obtains the state of a single download
             downloadManager.downloadIndex.getDownload(requestId)
         } catch (ioe: IOException) {
             null
@@ -220,6 +222,7 @@ class DownloadRepositoryImpl(
     private suspend fun refreshDownloadedSongs() {
         val completedIds = mutableSetOf<String>()
         withContext(Dispatchers.IO) {
+            //return a cursor which iterates over all downloads
             val cursor = downloadManager.downloadIndex.getDownloads()
             cursor.use {
                 while (it.moveToNext()) {
