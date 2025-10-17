@@ -100,6 +100,7 @@ class DownloadRepositoryImpl(
     override suspend fun removePlaylistDownload(playlistId: String): Result<Unit> =
         removeCollection(CollectionType.PLAYLIST, playlistId)
 
+    //Fetches all songs Uris and then queries all the uris for download
     private suspend fun downloadCollection(type: CollectionType, collectionId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -118,6 +119,7 @@ class DownloadRepositoryImpl(
             }
         }
 
+    //Creates the requestId and then sends remove command to the DownloadService
     private suspend fun removeCollection(type: CollectionType, collectionId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -154,7 +156,8 @@ class DownloadRepositoryImpl(
                 Unit
             }
         }
-
+    //Performs the api call to fetch all songs from the request
+    //For each of the retrievd songs it fetch the audio url and creates a DownloadSong object
     private suspend fun fetchAllSongs(type: CollectionType, collectionId: String): List<DownloadSong> {
         val pageSize = 50
         val request = when (type) {
@@ -183,6 +186,7 @@ class DownloadRepositoryImpl(
         return result.values.toList()
     }
 
+    //Creates DownloadRequest and send it to my DownloadService
     private fun enqueueDownload(song: DownloadSong, type: CollectionType, collectionId: String) {
         val requestId = requestIdForSong(song.id)
         val existing = try {
@@ -198,6 +202,7 @@ class DownloadRepositoryImpl(
             .setCustomCacheKey(song.id)
             .setData(buildRequestMetadata(type, collectionId))
             .build()
+        ///Once created, the request can be sent to the DownloadService to add the download
         DownloadService.sendAddDownload(
             appContext,
             SlipstreamDownloadService::class.java,
@@ -206,6 +211,7 @@ class DownloadRepositoryImpl(
         )
     }
 
+    //Builds the request metadata by using the type and collectionId
     private fun buildRequestMetadata(type: CollectionType, collectionId: String): ByteArray {
         val payload = "type=${type.name.lowercase()}&collectionId=$collectionId"
         return payload.toByteArray(StandardCharsets.UTF_8)
@@ -232,10 +238,12 @@ class DownloadRepositoryImpl(
         return requestId.removePrefix("song:").takeIf { it.isNotBlank() }
     }
 
+    //Returns the request id for the given song id
     private fun requestIdForSong(songId: String): String = "song:$songId"
 
     private enum class CollectionType { ALBUM, PLAYLIST }
 
+    //Convert a url string to a Uri
     private data class DownloadSong(val id: String, val url: String) {
         val uri: Uri = url.toUri()
     }

@@ -6,12 +6,11 @@ import android.app.PendingIntent
 import android.os.Build
 import androidx.annotation.RequiresPermission
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.common.util.Util
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadService
-import androidx.media3.exoplayer.scheduler.PlatformScheduler
 import androidx.media3.exoplayer.scheduler.Scheduler
+import androidx.media3.exoplayer.workmanager.WorkManagerScheduler
 import com.cesenahome.data.R
 
 @UnstableApi
@@ -23,19 +22,20 @@ class SlipstreamDownloadService : DownloadService(
     R.string.download_channel_description
 ) {
 
+
+    ///Returns the DownloadManager to be used
     override fun getDownloadManager(): DownloadManager {
         return DownloadComponents.getDownloadManager(applicationContext)
     }
 
+    ///Returns an optional Scheduler
     @RequiresPermission(Manifest.permission.RECEIVE_BOOT_COMPLETED)
     override fun getScheduler(): Scheduler? {
-        return if (Util.SDK_INT >= 21) {
-            PlatformScheduler(this, JOB_ID)
-        } else {
-            null
-        }
+        ///Decide between this and the PlatformScheduler (JobScheduler)
+        return WorkManagerScheduler(applicationContext, JOB_ID)
     }
 
+    ///Returns a notification to be displayed when the service is running in the foreground.
     override fun getForegroundNotification(
         downloads: MutableList<Download>,
         notMetRequirements: Int
