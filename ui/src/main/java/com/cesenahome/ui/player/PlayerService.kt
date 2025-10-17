@@ -17,13 +17,19 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.offline.Download
+import androidx.media3.exoplayer.offline.DownloadManager
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionError
 import com.cesenahome.domain.di.UseCaseProvider
+import com.cesenahome.domain.player.PlayerDownloadDependencies
 import com.cesenahome.domain.models.song.Song
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListenableFuture
@@ -35,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.util.Collections
 import java.util.LinkedHashMap
 import kotlin.coroutines.cancellation.CancellationException
@@ -47,6 +54,11 @@ class PlayerService : MediaLibraryService() {
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
     private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase }
     private val getRandomSongUseCase by lazy { UseCaseProvider.getRandomSongUseCase }
+
+    private val downloadProvider by lazy { PlayerDownloadDependencies.requireProvider() }
+    private val downloadManager: DownloadManager by lazy {
+        downloadProvider.getDownloadManager(applicationContext)
+    }
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Main.immediate)
     private val songCache: MutableMap<String, Song> = Collections.synchronizedMap(object : LinkedHashMap<String, Song>(CACHE_SIZE, 0.75f, true) {
@@ -93,10 +105,15 @@ class PlayerService : MediaLibraryService() {
             registerReceiver(noisyReceiver, noisyFilter)
         }
 
+        val cacheDataSourceFactory = CacheDataSource.Factory()
+            .setCache(downloadProvider.getDownloadCache(this))
+            .setUpstreamDataSourceFactory(DefaultHttpDataSource.Factory())
+
         player = ExoPlayer.Builder(this)
             .setSeekBackIncrementMs(SEEK_BACK_MS)
             .setSeekForwardIncrementMs(SEEK_FORWARD_MS)
             .setHandleAudioBecomingNoisy(true)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory))
             .build()
             .apply {
                 setAudioAttributes(
@@ -220,9 +237,14 @@ class PlayerService : MediaLibraryService() {
                 if (song != null) {
                     builder.setMediaMetadata(song.toMediaMetadata())
                 }
-                val uri = runCatching { resolveStreamUrlUseCase(item.mediaId) }.getOrNull()
-                if (!uri.isNullOrBlank()) {
-                    builder.setUri(uri)
+                val download = getCompletedDownload(item.mediaId)
+                if (download != null) {
+                    builder.applyDownloadRequest(download)
+                } else {
+                    val uri = runCatching { resolveStreamUrlUseCase(item.mediaId) }.getOrNull()
+                    if (!uri.isNullOrBlank()) {
+                        builder.setUri(uri)
+                    }
                 }
                 resolved += builder.build()
             }
@@ -238,6 +260,18 @@ class PlayerService : MediaLibraryService() {
             }
         }
         val cachedSong = songCache[mediaId]
+        val download = getCompletedDownload(mediaId)
+        if (download != null) {
+            val baseItem = cachedSong?.toMediaItem() ?: createUnknownMediaItem(mediaId)
+            return baseItem.buildUpon()
+                .apply {
+                    if (cachedSong != null) {
+                        setMediaMetadata(cachedSong.toMediaMetadata())
+                    }
+                    applyDownloadRequest(download)
+                }
+                .build()
+        }
         if (cachedSong != null) {
             return cachedSong.toMediaItem()
         }
@@ -245,16 +279,8 @@ class PlayerService : MediaLibraryService() {
             runCatching { resolveStreamUrlUseCase(mediaId) }.getOrNull()
         }
         if (uri != null) {
-            return MediaItem.Builder()
-                .setMediaId(mediaId)
+            return createUnknownMediaItem(mediaId).buildUpon()
                 .setUri(uri)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle("Unknown track")
-                        .setIsBrowsable(false)
-                        .setIsPlayable(true)
-                        .build()
-                )
                 .build()
         }
         return null
@@ -317,6 +343,39 @@ class PlayerService : MediaLibraryService() {
             (player.mediaItemCount - currentIndex - 1).coerceAtLeast(0)
         }
     }
+
+    private suspend fun getCompletedDownload(mediaId: String): Download? {
+        if (mediaId.isBlank()) return null
+        val requestId = requestIdForSong(mediaId)
+        val download = withContext(Dispatchers.IO) {
+            try {
+                downloadManager.downloadIndex.getDownload(requestId)
+            } catch (ioe: IOException) {
+                null
+            }
+        }
+        return download?.takeIf { it.state == Download.STATE_COMPLETED }
+    }
+
+    private fun MediaItem.Builder.applyDownloadRequest(download: Download) {
+        val request = download.request
+        request.uri?.let { setUri(it) }
+        request.mimeType?.let { setMimeType(it) }
+        request.customCacheKey?.let { setCustomCacheKey(it) }
+    }
+
+    private fun createUnknownMediaItem(mediaId: String): MediaItem = MediaItem.Builder()
+        .setMediaId(mediaId)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle("Unknown track")
+                .setIsBrowsable(false)
+                .setIsPlayable(true)
+                .build()
+        )
+        .build()
+
+    private fun requestIdForSong(mediaId: String): String = "song:$mediaId"
 
     private fun queueContainsMediaId(mediaId: String): Boolean {
         for (index in 0 until player.mediaItemCount) {

@@ -32,7 +32,7 @@ class SlipstreamDownloadService : DownloadService(
     @RequiresPermission(Manifest.permission.RECEIVE_BOOT_COMPLETED)
     override fun getScheduler(): Scheduler? {
         ///Decide between this and the PlatformScheduler (JobScheduler)
-        return WorkManagerScheduler(applicationContext, JOB_ID)
+        return WorkManagerScheduler(applicationContext, WORK_NAME)
     }
 
     ///Returns a notification to be displayed when the service is running in the foreground.
@@ -63,7 +63,7 @@ class SlipstreamDownloadService : DownloadService(
     }
 
     companion object {
-        private const val JOB_ID = 0x534C // Arbitrary but stable job id
+        private const val WORK_NAME = "SlipstreamDownloadServiceWork"
         private const val FOREGROUND_NOTIFICATION_ID = 0x444F574E
     }
 }

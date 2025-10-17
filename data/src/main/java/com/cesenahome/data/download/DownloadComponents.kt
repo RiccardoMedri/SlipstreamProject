@@ -17,7 +17,7 @@ import java.io.File
 import java.util.concurrent.Executors
 
 @UnstableApi
-internal object DownloadComponents {
+object DownloadComponents {
 
     private const val DOWNLOAD_FOLDER = "media_downloads"
     internal const val NOTIFICATION_CHANNEL_ID = "slipstream_downloads"
