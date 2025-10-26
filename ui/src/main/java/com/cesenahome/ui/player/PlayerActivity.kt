@@ -383,6 +383,20 @@ class PlayerActivity : AppCompatActivity() {
         binding.queueRecycler.layoutManager = LinearLayoutManager(this)
         binding.queueRecycler.adapter = adapter
 
+        val layoutManager = LinearLayoutManager(this)
+        binding.queueRecycler.layoutManager = layoutManager
+        binding.queueRecycler.adapter = adapter
+
+        val currentMediaId = controller.currentMediaItem?.mediaId
+        if (currentMediaId != null) {
+            val currentIndex = initialSongs.indexOfFirst { it.id == currentMediaId }
+            if (currentIndex >= 0) {
+                binding.queueRecycler.post {
+                    layoutManager.scrollToPositionWithOffset(currentIndex, 0)
+                }
+            }
+        }
+
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN,
             0
