@@ -2,6 +2,7 @@ package com.cesenahome.data.remote
 
 
 import android.content.Context
+import androidx.core.net.toUri
 import com.cesenahome.domain.models.album.AlbumPagingRequest
 import com.cesenahome.domain.models.album.AlbumSortField
 import com.cesenahome.domain.models.artist.ArtistPagingRequest
@@ -65,14 +66,14 @@ class JellyfinApiClient(
                 password = password
             )
 
-            updateAuthenticatedUser(auth.user?.id)
+            val accessToken = auth.accessToken ?: error("Missing access token in authentication response")
+            currentApi.update(accessToken = accessToken)
 
-            currentUserId = auth.user?.id
-
-            val uidString = auth.user?.id?.toString().orEmpty()
+            val userUuid = auth.user?.id ?: error("Missing user identifier in authentication response")
+            updateAuthenticatedUser(userUuid)
 
             val user = User(
-                userId = uidString,
+                userId = userUuid.toString(),
                 name = auth.user?.name,
                 serverUrl = currentApi.baseUrl.toString()
             )
@@ -113,10 +114,26 @@ class JellyfinApiClient(
     fun getAudio (itemId: String): String? {
         val api = currentApi() ?: return null
         val id = parseUuidOrNull(itemId) ?: return null
-        return api.audioApi.getAudioStreamUrl(
+        val streamUrl = api.audioApi.getAudioStreamUrl(
             itemId = id,
             static = true
-        )
+        ) ?: return null
+
+        val token = accessToken()
+        if (token.isNullOrBlank()) {
+            return streamUrl
+        }
+
+        val uri = streamUrl.toUri()
+        val hasToken = uri.getQueryParameter("api_key").isNullOrEmpty().not()
+        return if (hasToken) {
+            streamUrl
+        } else {
+            uri.buildUpon()
+                .appendQueryParameter("api_key", token)
+                .build()
+                .toString()
+        }
     }
 
     suspend fun fetchSongs(startIndex: Int, limit: Int, request: SongPagingRequest
