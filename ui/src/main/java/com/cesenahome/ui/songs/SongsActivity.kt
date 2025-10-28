@@ -27,7 +27,7 @@ import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongSortField
-import com.cesenahome.domain.models.song.SortDirection
+import com.cesenahome.domain.models.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
@@ -66,10 +66,7 @@ class SongsActivity : AppCompatActivity() {
             UseCaseProvider.observeDownloadedSongIdsUseCase,
             UseCaseProvider.observeDownloadedAlbumIdsUseCase,
             UseCaseProvider.observeDownloadedPlaylistIdsUseCase,
-            UseCaseProvider.downloadAlbumUseCase,
-            UseCaseProvider.removeAlbumDownloadUseCase,
-            UseCaseProvider.downloadPlaylistUseCase,
-            UseCaseProvider.removePlaylistDownloadUseCase,
+            UseCaseProvider.toggleCollectionDownloadUseCase,
             albumId,
             playlistId
         )

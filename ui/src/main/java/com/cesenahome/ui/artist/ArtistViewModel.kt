@@ -8,8 +8,8 @@ import com.cesenahome.domain.models.artist.Artist
 import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import com.cesenahome.domain.models.artist.ArtistSortField
 import com.cesenahome.domain.models.artist.ArtistSortOption
-import com.cesenahome.domain.models.song.SortDirection
-import com.cesenahome.domain.usecases.GetPagedArtistsUseCase
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.usecases.libraries.GetPagedArtistsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

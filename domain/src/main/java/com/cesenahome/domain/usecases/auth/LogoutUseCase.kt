@@ -1,4 +1,4 @@
-package com.cesenahome.domain.usecases
+package com.cesenahome.domain.usecases.auth
 
 import com.cesenahome.domain.repository.LoginRepository
 

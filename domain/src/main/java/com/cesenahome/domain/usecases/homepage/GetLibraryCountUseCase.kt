@@ -1,4 +1,4 @@
-package com.cesenahome.domain.usecases
+package com.cesenahome.domain.usecases.homepage
 
 import com.cesenahome.domain.models.homepage.LibraryCounts
 import com.cesenahome.domain.repository.HomepageRepository

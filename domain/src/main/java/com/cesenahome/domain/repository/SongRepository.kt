@@ -8,6 +8,7 @@ import kotlin.Result
 
 interface SongRepository {
 
+    //Fetches and handle the pagination of songs from the API
     fun pagingSongs(pageSize: Int = 200, request: SongPagingRequest): Flow<PagingData<Song>>
 
     suspend fun getSongsList(page: Int, pageSize: Int): Result<List<Song>>

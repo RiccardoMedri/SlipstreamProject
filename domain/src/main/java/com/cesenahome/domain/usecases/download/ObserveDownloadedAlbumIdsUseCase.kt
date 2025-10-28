@@ -1,4 +1,4 @@
-package com.cesenahome.domain.usecases
+package com.cesenahome.domain.usecases.download
 
 import com.cesenahome.domain.repository.DownloadRepository
 import kotlinx.coroutines.flow.Flow

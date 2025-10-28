@@ -1,4 +1,4 @@
-package com.cesenahome.domain.usecases
+package com.cesenahome.domain.usecases.libraries
 
 import androidx.paging.PagingData
 import com.cesenahome.domain.models.playlist.Playlist

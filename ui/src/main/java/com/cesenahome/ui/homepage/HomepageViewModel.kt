@@ -1,14 +1,13 @@
 package com.cesenahome.ui.homepage
 
-import android.content.ContentValues.TAG
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cesenahome.domain.models.homepage.HomeDestination
 import com.cesenahome.domain.models.homepage.HomeMenuItem
-import com.cesenahome.domain.usecases.EnsureFavouritePlaylistUseCase
-import com.cesenahome.domain.usecases.GetHomepageMenuUseCase
-import com.cesenahome.domain.usecases.GetLibraryCountsUseCase
+import com.cesenahome.domain.usecases.homepage.EnsureFavouritePlaylistUseCase
+import com.cesenahome.domain.usecases.homepage.GetHomepageMenuUseCase
+import com.cesenahome.domain.usecases.homepage.GetLibraryCountsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update

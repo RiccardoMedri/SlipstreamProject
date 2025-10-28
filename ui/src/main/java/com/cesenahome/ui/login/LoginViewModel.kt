@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cesenahome.domain.models.login.LoginResult
 import com.cesenahome.domain.models.login.LoginScreenState
-import com.cesenahome.domain.usecases.GetCurrentUserUseCase
-import com.cesenahome.domain.usecases.LoginUseCase
-import com.cesenahome.domain.usecases.LogoutUseCase
+import com.cesenahome.domain.usecases.auth.GetCurrentUserUseCase
+import com.cesenahome.domain.usecases.auth.LoginUseCase
+import com.cesenahome.domain.usecases.auth.LogoutUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

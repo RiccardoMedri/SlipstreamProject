@@ -1,4 +1,4 @@
-package com.cesenahome.domain.usecases
+package com.cesenahome.domain.usecases.favourites
 
 import com.cesenahome.domain.repository.PlaylistRepository
 import com.cesenahome.domain.repository.SongRepository

@@ -1,4 +1,4 @@
-package com.cesenahome.domain.usecases
+package com.cesenahome.domain.usecases.playback
 
 import com.cesenahome.domain.repository.PlayerRepository
 

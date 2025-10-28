@@ -6,5 +6,7 @@ import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import kotlinx.coroutines.flow.Flow
 
 interface ArtistRepository {
+
+    //Fetches and handle the pagination of artists from the API
     fun pagingArtists(pageSize: Int = 20, request: ArtistPagingRequest = ArtistPagingRequest()): Flow<PagingData<Artist>>
 }

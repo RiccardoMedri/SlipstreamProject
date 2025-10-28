@@ -8,9 +8,9 @@ import com.cesenahome.domain.models.playlist.Playlist
 import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
 import com.cesenahome.domain.models.playlist.PlaylistSortField
 import com.cesenahome.domain.models.playlist.PlaylistSortOption
-import com.cesenahome.domain.models.song.SortDirection
-import com.cesenahome.domain.usecases.GetPagedPlaylistsUseCase
-import com.cesenahome.domain.usecases.ObserveDownloadedPlaylistIdsUseCase
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.usecases.libraries.GetPagedPlaylistsUseCase
+import com.cesenahome.domain.usecases.download.ObserveDownloadedPlaylistIdsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -8,9 +8,9 @@ import com.cesenahome.domain.models.album.Album
 import com.cesenahome.domain.models.album.AlbumPagingRequest
 import com.cesenahome.domain.models.album.AlbumSortField
 import com.cesenahome.domain.models.album.AlbumSortOption
-import com.cesenahome.domain.models.song.SortDirection
-import com.cesenahome.domain.usecases.GetPagedAlbumUseCase
-import com.cesenahome.domain.usecases.ObserveDownloadedAlbumIdsUseCase
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.usecases.libraries.GetPagedAlbumUseCase
+import com.cesenahome.domain.usecases.download.ObserveDownloadedAlbumIdsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

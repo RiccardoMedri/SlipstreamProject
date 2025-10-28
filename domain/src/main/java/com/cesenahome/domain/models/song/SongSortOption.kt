@@ -1,14 +1,11 @@
 package com.cesenahome.domain.models.song
 
+import com.cesenahome.domain.models.SortDirection
+
 enum class SongSortField {
     NAME,
     ALBUM_ARTIST,
     DATE_ADDED
-}
-
-enum class SortDirection {
-    ASCENDING,
-    DESCENDING
 }
 
 data class SongSortOption(

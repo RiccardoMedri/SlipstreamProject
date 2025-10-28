@@ -9,16 +9,14 @@ import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.models.song.SongSortField
 import com.cesenahome.domain.models.song.SongSortOption
-import com.cesenahome.domain.models.song.SortDirection
-import com.cesenahome.domain.usecases.AddSongToFavouritesUseCase
-import com.cesenahome.domain.usecases.GetPagedSongsUseCase
-import com.cesenahome.domain.usecases.DownloadAlbumUseCase
-import com.cesenahome.domain.usecases.DownloadPlaylistUseCase
-import com.cesenahome.domain.usecases.ObserveDownloadedAlbumIdsUseCase
-import com.cesenahome.domain.usecases.ObserveDownloadedPlaylistIdsUseCase
-import com.cesenahome.domain.usecases.ObserveDownloadedSongIdsUseCase
-import com.cesenahome.domain.usecases.RemoveAlbumDownloadUseCase
-import com.cesenahome.domain.usecases.RemovePlaylistDownloadUseCase
+import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.usecases.favourites.AddSongToFavouritesUseCase
+import com.cesenahome.domain.usecases.libraries.GetPagedSongsUseCase
+import com.cesenahome.domain.usecases.DownloadCollectionTarget
+import com.cesenahome.domain.usecases.download.ObserveDownloadedAlbumIdsUseCase
+import com.cesenahome.domain.usecases.download.ObserveDownloadedPlaylistIdsUseCase
+import com.cesenahome.domain.usecases.download.ObserveDownloadedSongIdsUseCase
+import com.cesenahome.domain.usecases.ToggleCollectionDownloadUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,10 +36,7 @@ class SongsViewModel(
     private val observeDownloadedSongIdsUseCase: ObserveDownloadedSongIdsUseCase,
     private val observeDownloadedAlbumIdsUseCase: ObserveDownloadedAlbumIdsUseCase,
     private val observeDownloadedPlaylistIdsUseCase: ObserveDownloadedPlaylistIdsUseCase,
-    private val downloadAlbumUseCase: DownloadAlbumUseCase,
-    private val removeAlbumDownloadUseCase: RemoveAlbumDownloadUseCase,
-    private val downloadPlaylistUseCase: DownloadPlaylistUseCase,
-    private val removePlaylistDownloadUseCase: RemovePlaylistDownloadUseCase,
+    private val toggleCollectionDownloadUseCase: ToggleCollectionDownloadUseCase,
     private val albumId: String? = null,
     private val playlistId: String? = null,
 ) : ViewModel() {
@@ -199,21 +194,15 @@ class SongsViewModel(
     fun onToggleDownloadRequested() {
         if (downloadOperationInProgress.value) return
         val state = collectionDownloadState.value ?: return
+        val target = when {
+            albumId != null -> DownloadCollectionTarget.Album(albumId)
+            playlistId != null -> DownloadCollectionTarget.Playlist(playlistId)
+            else -> null
+        } ?: return
         val shouldDownload = !state.isDownloaded
-        val targetAlbum = albumId
-        val targetPlaylist = playlistId
-        if (targetAlbum == null && targetPlaylist == null) return
         downloadOperationInProgress.value = true
         viewModelScope.launch {
-            val result = when {
-                targetAlbum != null -> {
-                    if (shouldDownload) downloadAlbumUseCase(targetAlbum) else removeAlbumDownloadUseCase(targetAlbum)
-                }
-                targetPlaylist != null -> {
-                    if (shouldDownload) downloadPlaylistUseCase(targetPlaylist) else removePlaylistDownloadUseCase(targetPlaylist)
-                }
-                else -> Result.failure(IllegalStateException("No collection to download"))
-            }
+            val result = toggleCollectionDownloadUseCase(target, shouldDownload)
             result.fold(
                 onSuccess = {
                     _downloadEvents.emit(DownloadEvent.Success(shouldDownload))
