@@ -9,10 +9,10 @@ import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.models.song.SongSortField
 import com.cesenahome.domain.models.song.SongSortOption
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.misc.SortDirection
 import com.cesenahome.domain.usecases.favourites.AddSongToFavouritesUseCase
 import com.cesenahome.domain.usecases.libraries.GetPagedSongsUseCase
-import com.cesenahome.domain.usecases.DownloadCollectionTarget
+import com.cesenahome.domain.models.misc.DownloadCollectionTarget
 import com.cesenahome.domain.usecases.download.ObserveDownloadedAlbumIdsUseCase
 import com.cesenahome.domain.usecases.download.ObserveDownloadedPlaylistIdsUseCase
 import com.cesenahome.domain.usecases.download.ObserveDownloadedSongIdsUseCase

@@ -9,5 +9,6 @@ interface ResolveStreamUrlUseCase {
 class ResolveStreamUrlUseCaseImpl(
     private val playerRepository: PlayerRepository
 ) : ResolveStreamUrlUseCase {
-    override suspend operator fun invoke(mediaId: String): String? = playerRepository.resolveStreamUrl(mediaId)
+    override suspend operator fun invoke(mediaId: String): String? =
+        playerRepository.resolveStreamUrl(mediaId)
 }

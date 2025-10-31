@@ -1,6 +1,6 @@
 package com.cesenahome.domain.models.album
 
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.misc.SortDirection
 
 enum class AlbumSortField {
     TITLE,

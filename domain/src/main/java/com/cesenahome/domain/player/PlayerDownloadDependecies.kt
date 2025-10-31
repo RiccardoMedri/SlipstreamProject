@@ -6,10 +6,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.exoplayer.offline.DownloadManager
 
-/**
- * Provides download-related infrastructure needed by the player while keeping the UI
- * module decoupled from the data layer implementation.
- */
+// Provides download-related infrastructure needed by the player while keeping the UI
+// module decoupled from the data layer implementation.
 @OptIn(UnstableApi::class)
 object PlayerDownloadDependencies {
 

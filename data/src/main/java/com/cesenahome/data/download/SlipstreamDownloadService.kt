@@ -31,7 +31,6 @@ class SlipstreamDownloadService : DownloadService(
     ///Returns an optional Scheduler
     @RequiresPermission(Manifest.permission.RECEIVE_BOOT_COMPLETED)
     override fun getScheduler(): Scheduler? {
-        ///Decide between this and the PlatformScheduler (JobScheduler)
         return WorkManagerScheduler(applicationContext, WORK_NAME)
     }
 

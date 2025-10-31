@@ -6,7 +6,7 @@ import kotlin.Result
 
 /**
  * Use case to fetch a simple list of songs for a given page and page size.
- * Suitable for direct list fetching rather than PagingData streams.
+ * Needed for direct list fetching rather than PagingData streams.
  */
 interface GetSimpleSongsListUseCase {
     suspend operator fun invoke(page: Int, pageSize: Int): Result<List<Song>>

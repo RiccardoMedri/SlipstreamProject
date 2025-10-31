@@ -15,7 +15,7 @@ import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.artist.ArtistSortField
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.misc.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.common.NowPlayingFabController

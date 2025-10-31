@@ -54,7 +54,6 @@ class PlayerService : MediaLibraryService() {
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
     private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase }
     private val getRandomSongUseCase by lazy { UseCaseProvider.getRandomSongUseCase }
-
     private val downloadProvider by lazy { PlayerDownloadDependencies.requireProvider() }
     private val downloadManager: DownloadManager by lazy {
         downloadProvider.getDownloadManager(applicationContext)

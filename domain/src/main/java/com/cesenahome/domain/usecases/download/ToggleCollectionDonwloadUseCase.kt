@@ -1,13 +1,7 @@
 package com.cesenahome.domain.usecases
 
+import com.cesenahome.domain.models.misc.DownloadCollectionTarget
 import com.cesenahome.domain.repository.DownloadRepository
-
-sealed interface DownloadCollectionTarget {
-    val id: String
-
-    data class Album(override val id: String) : DownloadCollectionTarget
-    data class Playlist(override val id: String) : DownloadCollectionTarget
-}
 
 fun interface ToggleCollectionDownloadUseCase {
     suspend operator fun invoke(target: DownloadCollectionTarget, shouldDownload: Boolean): Result<Unit>

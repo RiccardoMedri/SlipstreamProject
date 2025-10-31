@@ -1,4 +1,4 @@
-package com.cesenahome.domain.models
+package com.cesenahome.domain.models.misc
 
 enum class SortDirection {
     ASCENDING,

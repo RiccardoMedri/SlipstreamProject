@@ -9,7 +9,7 @@ import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import com.cesenahome.domain.models.artist.ArtistSortField
 import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
 import com.cesenahome.domain.models.playlist.PlaylistSortField
-import com.cesenahome.domain.models.SortDirection
+import com.cesenahome.domain.models.misc.SortDirection
 import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.models.song.SongSortField
 import com.cesenahome.domain.models.login.User

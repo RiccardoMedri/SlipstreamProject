@@ -13,5 +13,6 @@ fun interface GetPagedSongsUseCase {
 class GetPagedSongsUseCaseImpl(
     private val repo: SongRepository
 ) : GetPagedSongsUseCase {
-    override fun invoke(request: SongPagingRequest): Flow<PagingData<Song>> = repo.pagingSongs(request = request)
+    override fun invoke(request: SongPagingRequest): Flow<PagingData<Song>> =
+        repo.pagingSongs(request = request)
 }

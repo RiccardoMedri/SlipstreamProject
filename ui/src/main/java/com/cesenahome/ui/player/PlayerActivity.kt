@@ -34,14 +34,25 @@ import java.util.Locale
 class PlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlayerBinding
+
+    //Async factory result for a Media3 MediaController
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController? get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
+
+    //Tracks which song the Activity believes is “current” (from the intent or the service after transitions)
+    //Used to decide whether to push a new item to the service.
     private var currentSongId: String? = null
+
     private var isSeeking = false
+
+    //These back the bottom-sheet queue UI (open, render, allow drag to reorder)
     private var queueDialog: BottomSheetDialog? = null
     private var queueDialogBinding: DialogQueueBottomSheetBinding? = null
     private var queueAdapter: QueueAdapter? = null
     private var queueDragHelper: ItemTouchHelper? = null
+
+    //Posts itself every 100ms (while started) to refresh the elapsed/total time
+    //and SeekBar position only if connected and not seeking
     private val progressUpdater = object : Runnable {
         override fun run() {
             mediaController?.let {
@@ -54,6 +65,8 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
     }
+
+    //
     companion object {
         const val EXTRA_SONG_ID = "extra_song_id"
         const val EXTRA_SONG_TITLE = "extra_song_title"
@@ -67,6 +80,9 @@ class PlayerActivity : AppCompatActivity() {
         private const val BUTTON_DISABLED_ALPHA = 0.4f
     }
 
+    //Reads all extras Sets quick UI defaults immediately (cover, artist, title, etc etc) from intent
+    //so the screen isn’t blank while the controller binds, the actual metadata for playback
+    //still comes from the service after the controller connects.
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPlayerBinding.inflate(layoutInflater)
@@ -91,6 +107,11 @@ class PlayerActivity : AppCompatActivity() {
         setupClickListeners()
     }
 
+    //Build a session token that points at PlayerService
+    //Adds a listener to the mediaController which register playerListener to receive state changes
+    //Decide what to do with the initial song:
+    // - If the service is playing something else or nothing, push that media item
+    // - Else update UI with current state from service
     override fun onStart() {
         super.onStart()
         val sessionToken = SessionToken(this, ComponentName(this, PlayerService::class.java))
@@ -117,6 +138,8 @@ class PlayerActivity : AppCompatActivity() {
         )
     }
 
+    //Dismiss the queue dialog, remove the listener
+    //and release the controller future
     override fun onStop() {
         queueDialog?.dismiss()
         queueDialog = null
@@ -129,6 +152,12 @@ class PlayerActivity : AppCompatActivity() {
         super.onStop()
     }
 
+    //Builds a MediaMetadata and then a MediaItem with its specific songId
+    //If the intent includes a full queue it maps each to a MediaItem
+    //finds the proper start index (either the matching ID or a fallback extra)
+    //and sets the media items in the player with its index
+    //If it's only one item it calls setMediaItems directly
+    //It ultimately prepares and plays the player
     private fun playNewSongFromIntent(controller: MediaController) {
         val songId = intent.getStringExtra(EXTRA_SONG_ID) ?: return
         val title = intent.getStringExtra(EXTRA_SONG_TITLE)
@@ -162,6 +191,10 @@ class PlayerActivity : AppCompatActivity() {
         controller.prepare()
         controller.play()
     }
+
+    //Wires buttons directly to controller methods, seekbar object is defined
+    //to better handle seekbar changes on start, while dragging and on stop
+    //The activity never fetches directly audio data it simply sends commands to the session
     private fun setupClickListeners() {
         binding.playPauseButton.setOnClickListener {
             mediaController?.let {
@@ -218,11 +251,16 @@ class PlayerActivity : AppCompatActivity() {
         })
     }
 
+    //Reacts to session/player events, when:
+    // - MediaMetada change: refresh metadata from the session’s current item, update currentSongId, refresh queue dialog
+    // - User start/stop player: update play/pause button
+    // - When playback changes state: update progress bar
+    // - Shuffle command or repeat modeis toggled: Update icons and queue dialog
+    // - WHen player skips: refresh progress, metadata and queue
     private val playerListener = object : Player.Listener {
         override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
             binding.titleTextView.text = mediaMetadata.title
             binding.artistTextView.text = mediaMetadata.artist
-            // binding.albumTextView.text = mediaMetadata.albumTitle // If you add an album TextView
             Glide.with(this@PlayerActivity)
                 .load(mediaMetadata.artworkUri)
                 .into(binding.artworkImageView)
@@ -235,8 +273,6 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            // Can be used to show loading indicators, error messages etc.
-            // For example, if playbackState == Player.STATE_BUFFERING
             updateProgress(mediaController?.currentPosition ?: 0, mediaController?.duration ?: 0)
         }
 
@@ -251,7 +287,7 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
-            // Called when player jumps to a new item or position (e.g. seekToNext, seekToPrevious, seekTo)
+            // Called when player jumps to a new item or position
             updateProgress(newPosition.positionMs, mediaController?.duration ?: 0)
             updateUiWithCurrentMediaItem(mediaController?.mediaItemCount ?: 0 > 0)
             updateQueueDialog()
@@ -289,7 +325,7 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
         } else {
-            // Clear UI if no media item (e.g., queue ended)
+            // Clear UI if no media item
             binding.titleTextView.text = "-"
             binding.artistTextView.text = "-"
             binding.currentTimeTextView.text = formatDuration(0)
@@ -329,12 +365,13 @@ class PlayerActivity : AppCompatActivity() {
         return formatter.format("%02d:%02d", minutes, seconds).toString()
     }
 
+    // Periodic UI updates for progress bar, especially if player was active in background
     override fun onResume() {
         super.onResume()
-        // Periodic UI updates for progress bar, especially if player was active in background
         binding.root.post(progressUpdater)
     }
 
+    //Stops the periodic UI updates
     override fun onPause() {
         binding.root.removeCallbacks(progressUpdater)
         super.onPause()
@@ -347,6 +384,7 @@ class PlayerActivity : AppCompatActivity() {
             if (enabled) R.string.cd_shuffle_on else R.string.cd_shuffle_off
         )
     }
+
     private fun updateRepeatButton(repeatMode: Int) {
         val (icon, description, alpha) = when (repeatMode) {
             Player.REPEAT_MODE_ONE -> Triple(R.drawable.ic_repeat_one, R.string.cd_repeat_one, 1f)
@@ -357,6 +395,7 @@ class PlayerActivity : AppCompatActivity() {
         binding.repeatButton.alpha = alpha
         binding.repeatButton.contentDescription = getString(description)
     }
+
     private fun nextRepeatMode(currentMode: Int): Int = when (currentMode) {
         Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
         Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
