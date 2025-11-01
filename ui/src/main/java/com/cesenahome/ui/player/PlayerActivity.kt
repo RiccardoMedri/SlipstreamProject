@@ -30,12 +30,15 @@ import java.util.ArrayList
 import java.util.Formatter
 import java.util.Locale
 
+private const val PROGRESS_UPDATE_INTERVAL_MS = 100L
+private const val BUTTON_DISABLED_ALPHA = 0.4f
+
 @UnstableApi
 class PlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlayerBinding
 
-    //Async factory result for a Media3 MediaController
+    //Holds the async result of building a MediaController
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
     private val mediaController: MediaController? get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
 
@@ -43,6 +46,7 @@ class PlayerActivity : AppCompatActivity() {
     //Used to decide whether to push a new item to the service.
     private var currentSongId: String? = null
 
+    //It's a guard flag to prevent UI update while dragging the SeekBar
     private var isSeeking = false
 
     //These back the bottom-sheet queue UI (open, render, allow drag to reorder)
@@ -66,20 +70,6 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    //
-    companion object {
-        const val EXTRA_SONG_ID = "extra_song_id"
-        const val EXTRA_SONG_TITLE = "extra_song_title"
-        const val EXTRA_SONG_ARTIST = "extra_song_artist"
-        const val EXTRA_SONG_ALBUM = "extra_song_album"
-        const val EXTRA_SONG_ARTWORK_URL = "extra_song_artwork_url"
-        const val EXTRA_SONG_DURATION_MS = "extra_song_duration_ms"
-        const val EXTRA_QUEUE_SONGS = "extra_queue_songs"
-        const val EXTRA_QUEUE_SELECTED_INDEX = "extra_queue_selected_index"
-        private const val PROGRESS_UPDATE_INTERVAL_MS = 100L
-        private const val BUTTON_DISABLED_ALPHA = 0.4f
-    }
-
     //Reads all extras Sets quick UI defaults immediately (cover, artist, title, etc etc) from intent
     //so the screen isn’t blank while the controller binds, the actual metadata for playback
     //still comes from the service after the controller connects.
@@ -89,12 +79,11 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // Retrieve initial song details from intent
-        currentSongId = intent.getStringExtra(EXTRA_SONG_ID)
-        val title = intent.getStringExtra(EXTRA_SONG_TITLE)
-        val artist = intent.getStringExtra(EXTRA_SONG_ARTIST)
-        val album = intent.getStringExtra(EXTRA_SONG_ALBUM)
-        val artworkUrl = intent.getStringExtra(EXTRA_SONG_ARTWORK_URL)
-        val durationMs = intent.getLongExtra(EXTRA_SONG_DURATION_MS, 0)
+        currentSongId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ID)
+        val title = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_TITLE)
+        val artist = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST)
+        val artworkUrl = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL)
+        val durationMs = intent.getLongExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, 0)
 
         binding.titleTextView.text = title
         binding.artistTextView.text = artist
@@ -159,11 +148,11 @@ class PlayerActivity : AppCompatActivity() {
     //If it's only one item it calls setMediaItems directly
     //It ultimately prepares and plays the player
     private fun playNewSongFromIntent(controller: MediaController) {
-        val songId = intent.getStringExtra(EXTRA_SONG_ID) ?: return
-        val title = intent.getStringExtra(EXTRA_SONG_TITLE)
-        val artist = intent.getStringExtra(EXTRA_SONG_ARTIST)
-        val album = intent.getStringExtra(EXTRA_SONG_ALBUM)
-        val artworkUrl = intent.getStringExtra(EXTRA_SONG_ARTWORK_URL)
+        val songId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ID) ?: return
+        val title = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_TITLE)
+        val artist = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST)
+        val album = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM)
+        val artworkUrl = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL)
 
         val metadata = MediaMetadata.Builder()
             .setTitle(title)
@@ -177,12 +166,12 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaMetadata(metadata)
             .build()
 
-        val queueSongs = intent.getParcelableArrayListExtra<QueueSong>(EXTRA_QUEUE_SONGS)
+        val queueSongs = intent.getParcelableArrayListExtra<QueueSong>(PlayerActivityExtras.EXTRA_QUEUE_SONGS)
         if (!queueSongs.isNullOrEmpty()) {
             val mediaItems = queueSongs.map { it.toMediaItem() }
             val startIndex = queueSongs.indexOfFirst { it.id == songId }
                 .takeIf { it >= 0 }
-                ?: intent.getIntExtra(EXTRA_QUEUE_SELECTED_INDEX, 0)
+                ?: intent.getIntExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, 0)
                     .coerceIn(0, mediaItems.lastIndex)
             controller.setMediaItems(mediaItems, startIndex, C.TIME_UNSET)
         } else {
@@ -507,20 +496,9 @@ class PlayerActivity : AppCompatActivity() {
         binding.emptyText.isVisible = !hasItems
     }
 
-    private fun QueueSong.toMediaItem(): MediaItem = MediaItem.Builder()
-        .setMediaId(id)
-        .setMediaMetadata(
-            MediaMetadata.Builder()
-                .setTitle(title)
-                .setArtist(artist)
-                .setAlbumTitle(album)
-                .setArtworkUri(artworkUrl?.toUri())
-                .setIsBrowsable(false)
-                .setIsPlayable(true)
-                .build()
-        )
-        .build()
-
+    //The queue dialog needs a domain-model list to render
+    //This helper hides the Media3 details and hands the adapter a clean list
+    //It’s only used to populate/update the queue UI
     private fun MediaController.buildQueueSongs(): List<QueueSong> {
         val items = ArrayList<QueueSong>(mediaItemCount)
         for (index in 0 until mediaItemCount) {
@@ -529,6 +507,7 @@ class PlayerActivity : AppCompatActivity() {
         return items
     }
 
+    //Lifts Media3 metadata into my domain QueueSong
     private fun MediaItem.toQueueSong(): QueueSong = QueueSong(
         id = mediaId,
         title = mediaMetadata.title?.toString().orEmpty(),

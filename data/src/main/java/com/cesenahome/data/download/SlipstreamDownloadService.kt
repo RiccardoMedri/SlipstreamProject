@@ -2,6 +2,8 @@ package com.cesenahome.data.download
 
 import android.Manifest
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.os.Build
 import androidx.annotation.RequiresPermission
@@ -22,6 +24,10 @@ class SlipstreamDownloadService : DownloadService(
     R.string.download_channel_description
 ) {
 
+    override fun onCreate() {
+        super.onCreate()
+        ensureNotificationChannel()
+    }
 
     ///Returns the DownloadManager to be used
     override fun getDownloadManager(): DownloadManager {
@@ -59,6 +65,20 @@ class SlipstreamDownloadService : DownloadService(
             PendingIntent.FLAG_UPDATE_CURRENT
         }
         return PendingIntent.getActivity(this, 0, launchIntent, flags)
+    }
+
+    private fun ensureNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = getSystemService(NotificationManager::class.java)
+            val channel = NotificationChannel(
+                DownloadComponents.NOTIFICATION_CHANNEL_ID,
+                getString(R.string.download_channel_name),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = getString(R.string.download_channel_description)
+            }
+            manager.createNotificationChannel(channel)
+        }
     }
 
     companion object {

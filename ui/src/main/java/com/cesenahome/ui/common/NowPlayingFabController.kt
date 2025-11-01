@@ -16,6 +16,7 @@ import androidx.media3.session.SessionToken
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.R
 import com.cesenahome.ui.player.PlayerActivity
+import com.cesenahome.ui.player.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.common.util.concurrent.ListenableFuture
@@ -105,15 +106,15 @@ class NowPlayingFabController(
         val durationMs = controller.duration.takeIf { it > 0 } ?: 0L
         val currentIndex = controller.currentMediaItemIndex.takeIf { it != C.INDEX_UNSET } ?: 0
         val intent = Intent(activity, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivity.EXTRA_SONG_ID, currentItem.mediaId)
-            putExtra(PlayerActivity.EXTRA_SONG_TITLE, currentItem.mediaMetadata.title?.toString())
-            putExtra(PlayerActivity.EXTRA_SONG_ARTIST, currentItem.mediaMetadata.artist?.toString())
-            putExtra(PlayerActivity.EXTRA_SONG_ALBUM, currentItem.mediaMetadata.albumTitle?.toString())
-            putExtra(PlayerActivity.EXTRA_SONG_ARTWORK_URL, currentItem.mediaMetadata.artworkUri?.toString())
-            putExtra(PlayerActivity.EXTRA_SONG_DURATION_MS, durationMs)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ID, currentItem.mediaId)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, currentItem.mediaMetadata.title?.toString())
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, currentItem.mediaMetadata.artist?.toString())
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, currentItem.mediaMetadata.albumTitle?.toString())
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, currentItem.mediaMetadata.artworkUri?.toString())
+            putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, durationMs)
             if (queueSongs.isNotEmpty()) {
-                putParcelableArrayListExtra(PlayerActivity.EXTRA_QUEUE_SONGS, queueSongs)
-                putExtra(PlayerActivity.EXTRA_QUEUE_SELECTED_INDEX, currentIndex)
+                putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
+                putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, currentIndex)
             }
         }
         activity.startActivity(intent)

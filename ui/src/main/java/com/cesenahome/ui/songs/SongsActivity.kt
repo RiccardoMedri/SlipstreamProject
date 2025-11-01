@@ -33,6 +33,7 @@ import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
+import com.cesenahome.ui.player.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.collectLatest
@@ -413,15 +414,15 @@ class SongsActivity : AppCompatActivity() {
         }
         val selectedIndex = queueSongs.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
         val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivity.EXTRA_SONG_ID, song.id)
-            putExtra(PlayerActivity.EXTRA_SONG_TITLE, song.title)
-            putExtra(PlayerActivity.EXTRA_SONG_ARTIST, song.artist)
-            putExtra(PlayerActivity.EXTRA_SONG_ALBUM, song.album)
-            putExtra(PlayerActivity.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
-            putExtra(PlayerActivity.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ID, song.id)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, song.title)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, song.artist)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, song.album)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
             if (queueSongs.isNotEmpty()) {
-                putParcelableArrayListExtra(PlayerActivity.EXTRA_QUEUE_SONGS, queueSongs)
-                putExtra(PlayerActivity.EXTRA_QUEUE_SELECTED_INDEX, selectedIndex)
+                putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
+                putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, selectedIndex)
             }
         }
         startActivity(intent)

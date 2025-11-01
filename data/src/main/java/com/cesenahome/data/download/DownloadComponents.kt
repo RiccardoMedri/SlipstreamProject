@@ -31,9 +31,6 @@ object DownloadComponents {
     private var downloadCache: Cache? = null
 
     @Volatile
-    private var downloaderFactory: DownloaderFactory? = null
-
-    @Volatile
     private var downloadManager: DownloadManager? = null
 
     @Volatile
@@ -72,21 +69,6 @@ object DownloadComponents {
             // optional tuning:
             maxParallelDownloads = 3
         }
-    }
-
-    private fun getDownloaderFactory(context: Context): DownloaderFactory {
-        return downloaderFactory ?: synchronized(lock) {
-            downloaderFactory ?: DefaultDownloaderFactory(
-                buildCacheDataSourceFactory(context)
-            ).also { downloaderFactory = it }
-        }
-    }
-
-    private fun buildCacheDataSourceFactory(context: Context): CacheDataSource.Factory {
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-        return CacheDataSource.Factory()
-            .setCache(getDownloadCache(context))
-            .setUpstreamDataSourceFactory(httpDataSourceFactory)
     }
 
     private fun getDatabaseProvider(context: Context): DatabaseProvider {
