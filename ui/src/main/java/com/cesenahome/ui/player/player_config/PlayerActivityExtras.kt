@@ -1,10 +1,12 @@
-package com.cesenahome.ui.player
+package com.cesenahome.ui.player.player_config
 
 object PlayerActivityExtras {
     const val EXTRA_SONG_ID = "extra_song_id"
     const val EXTRA_SONG_TITLE = "extra_song_title"
     const val EXTRA_SONG_ARTIST = "extra_song_artist"
+    const val EXTRA_SONG_ARTIST_ID = "extra_song_artist_id"
     const val EXTRA_SONG_ALBUM = "extra_song_album"
+    const val EXTRA_SONG_ALBUM_ID = "extra_song_album_id"
     const val EXTRA_SONG_ARTWORK_URL = "extra_song_artwork_url"
     const val EXTRA_SONG_DURATION_MS = "extra_song_duration_ms"
     const val EXTRA_QUEUE_SONGS = "extra_queue_songs"

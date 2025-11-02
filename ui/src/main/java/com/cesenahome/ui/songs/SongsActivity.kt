@@ -9,13 +9,11 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -33,8 +31,9 @@ import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
-import com.cesenahome.ui.player.PlayerActivityExtras
+import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
+import com.cesenahome.ui.player.toMediaItem
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -390,21 +389,6 @@ class SongsActivity : AppCompatActivity() {
         Toast.makeText(this, R.string.queue_song_added_next, Toast.LENGTH_SHORT).show()
     }
 
-    private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
-        .setMediaId(id)
-        .setMediaMetadata(
-            MediaMetadata.Builder()
-                .setTitle(title)
-                .setArtist(artist)
-                .setAlbumTitle(album)
-                .setArtworkUri(artworkUrl?.toUri())
-                .setIsBrowsable(false)
-                .setIsPlayable(true)
-                .build()
-        )
-        .build()
-
-
     @OptIn(UnstableApi::class)
     private fun launchPlayerActivity(song: Song) {
         val snapshotSongs = adapter.snapshot().items
@@ -417,7 +401,9 @@ class SongsActivity : AppCompatActivity() {
             putExtra(PlayerActivityExtras.EXTRA_SONG_ID, song.id)
             putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, song.title)
             putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, song.artist)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, song.artistId)
             putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, song.album)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, song.albumId)
             putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
             putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
             if (queueSongs.isNotEmpty()) {
@@ -432,7 +418,9 @@ class SongsActivity : AppCompatActivity() {
         id = id,
         title = title,
         artist = artist,
+        artistId = artistId,
         album = album,
+        albumId = albumId,
         durationMs = durationMs,
         artworkUrl = artworkUrl
     )

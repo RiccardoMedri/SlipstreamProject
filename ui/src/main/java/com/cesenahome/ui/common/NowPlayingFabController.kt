@@ -13,11 +13,14 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ALBUM_ID
+import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ARTIST_ID
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.R
 import com.cesenahome.ui.player.PlayerActivity
-import com.cesenahome.ui.player.PlayerActivityExtras
+import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
+import com.cesenahome.ui.player.toQueueSong
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -109,7 +112,9 @@ class NowPlayingFabController(
             putExtra(PlayerActivityExtras.EXTRA_SONG_ID, currentItem.mediaId)
             putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, currentItem.mediaMetadata.title?.toString())
             putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, currentItem.mediaMetadata.artist?.toString())
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, currentItem.mediaMetadata.extras?.getString(MEDIA_METADATA_KEY_ARTIST_ID))
             putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, currentItem.mediaMetadata.albumTitle?.toString())
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, currentItem.mediaMetadata.extras?.getString(MEDIA_METADATA_KEY_ALBUM_ID))
             putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, currentItem.mediaMetadata.artworkUri?.toString())
             putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, durationMs)
             if (queueSongs.isNotEmpty()) {
@@ -119,13 +124,4 @@ class NowPlayingFabController(
         }
         activity.startActivity(intent)
     }
-
-    private fun MediaItem.toQueueSong(): QueueSong = QueueSong(
-        id = mediaId,
-        title = mediaMetadata.title?.toString().orEmpty(),
-        artist = mediaMetadata.artist?.toString(),
-        album = mediaMetadata.albumTitle?.toString(),
-        durationMs = null,
-        artworkUrl = mediaMetadata.artworkUri?.toString()
-    )
 }

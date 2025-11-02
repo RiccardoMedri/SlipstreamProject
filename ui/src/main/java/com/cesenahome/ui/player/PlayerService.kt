@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.content.Intent
 import android.os.Build
 import androidx.concurrent.futures.CallbackToFutureAdapter
-import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -25,6 +24,15 @@ import androidx.media3.session.MediaSession
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.player.PlayerDownloadDependencies
 import com.cesenahome.domain.models.song.Song
+import com.cesenahome.ui.player.PlayerServiceConfig.CACHE_SIZE
+import com.cesenahome.ui.player.PlayerServiceConfig.CHANNEL_ID
+import com.cesenahome.ui.player.PlayerServiceConfig.SEEK_BACK_MS
+import com.cesenahome.ui.player.PlayerServiceConfig.SEEK_FORWARD_MS
+import com.cesenahome.ui.player.PlayerServiceConfig.SESSION_ID
+import com.cesenahome.ui.player.PlayerServiceConfig.SHUFFLE_BUFFER_TARGET
+import com.cesenahome.ui.player.PlayerServiceConfig.SHUFFLE_HISTORY_LIMIT
+import com.cesenahome.ui.player.PlayerServiceConfig.SHUFFLE_PRIME_BATCH
+import com.cesenahome.ui.player.PlayerServiceConfig.SHUFFLE_RANDOM_ATTEMPTS
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,10 +75,10 @@ class PlayerService : MediaLibraryService() {
     //A tiny LRU map keyed by songId, it caches Song to enrich MediaItem metadata quickly without re-fetching
     //It’s synchronized and evicts eldest entry automatically
     private val songCache: MutableMap<String, Song> = Collections.synchronizedMap(object : LinkedHashMap<String, Song>(CACHE_SIZE, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Song>?): Boolean {
-                return size > CACHE_SIZE
-            }
-        })
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Song>?): Boolean {
+            return size > CACHE_SIZE
+        }
+    })
 
     //It’s a Mutex used to serialize modifications to the queue while managing shuffle
     //Protects queue mutations while priming/filling the shuffle buffer
@@ -307,20 +315,6 @@ class PlayerService : MediaLibraryService() {
         return false
     }
 
-    private fun Song.toMediaItem(): MediaItem = MediaItem.Builder()
-        .setMediaId(id)
-        .setMediaMetadata(toMediaMetadata())
-        .build()
-
-    private fun Song.toMediaMetadata(): MediaMetadata = MediaMetadata.Builder()
-        .setTitle(title)
-        .setArtist(artist)
-        .setAlbumTitle(album)
-        .setArtworkUri(artworkUrl?.toUri())
-        .setIsBrowsable(false)
-        .setIsPlayable(true)
-        .build()
-
     private inner class LibraryCallback : MediaLibrarySession.Callback {
 
         //Grants default player/session commands + explicitly allows shuffle, repeat, and seek-to-item
@@ -377,17 +371,5 @@ class PlayerService : MediaLibraryService() {
             }
             "PlayerService#serviceFuture"
         }
-    }
-
-    companion object {
-        private const val CHANNEL_ID = "playback"
-        private const val SESSION_ID = "slipstream_session"
-        private const val CACHE_SIZE = 250
-        private const val SEEK_BACK_MS = 10_000L
-        private const val SEEK_FORWARD_MS = 30_000L
-        private const val SHUFFLE_PRIME_BATCH = 10
-        private const val SHUFFLE_BUFFER_TARGET = 25
-        private const val SHUFFLE_HISTORY_LIMIT = 20
-        private const val SHUFFLE_RANDOM_ATTEMPTS = 40
     }
 }

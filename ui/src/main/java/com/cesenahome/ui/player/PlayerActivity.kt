@@ -1,6 +1,7 @@
 package com.cesenahome.ui.player
 
 import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
 import android.widget.SeekBar
 import android.widget.Toast
@@ -19,10 +20,13 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivityPlayerBinding
 import com.cesenahome.ui.databinding.DialogQueueBottomSheetBinding
-import com.cesenahome.domain.models.song.QueueSong
+import com.cesenahome.ui.player.toQueueSong
+import com.cesenahome.ui.player.player_config.PlayerActivityExtras
+import com.cesenahome.ui.songs.SongsActivity
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -45,6 +49,8 @@ class PlayerActivity : AppCompatActivity() {
     //Tracks which song the Activity believes is “current” (from the intent or the service after transitions)
     //Used to decide whether to push a new item to the service.
     private var currentSongId: String? = null
+    private var currentAlbumId: String? = null
+    private var currentArtistId: String? = null
 
     //It's a guard flag to prevent UI update while dragging the SeekBar
     private var isSeeking = false
@@ -82,11 +88,15 @@ class PlayerActivity : AppCompatActivity() {
         currentSongId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ID)
         val title = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_TITLE)
         val artist = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST)
+        val artistId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID)
+        val album = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM)
+        val albumId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID)
         val artworkUrl = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL)
         val durationMs = intent.getLongExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, 0)
 
         binding.titleTextView.text = title
-        binding.artistTextView.text = artist
+        updateAlbumInfo(album, albumId)
+        updateArtistInfo(artist, artistId)
         artworkUrl?.let {
             Glide.with(this).load(it.toUri()).into(binding.artworkImageView)
         }
@@ -152,14 +162,26 @@ class PlayerActivity : AppCompatActivity() {
         val title = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_TITLE)
         val artist = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST)
         val album = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM)
+        val artistId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID)
+        val albumId = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID)
         val artworkUrl = intent.getStringExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL)
 
-        val metadata = MediaMetadata.Builder()
+        val metadataBuilder = MediaMetadata.Builder()
             .setTitle(title)
             .setArtist(artist)
             .setAlbumTitle(album)
             .setArtworkUri(artworkUrl?.toUri())
-            .build()
+            .setIsBrowsable(false)
+            .setIsPlayable(true)
+
+        val extras = Bundle()
+        albumId?.let { extras.putString(MEDIA_METADATA_KEY_ALBUM_ID, it) }
+        artistId?.let { extras.putString(MEDIA_METADATA_KEY_ARTIST_ID, it) }
+        if (!extras.isEmpty) {
+            metadataBuilder.setExtras(extras)
+        }
+
+        val metadata = metadataBuilder.build()
 
         val mediaItem = MediaItem.Builder()
             .setMediaId(songId)
@@ -185,6 +207,8 @@ class PlayerActivity : AppCompatActivity() {
     //to better handle seekbar changes on start, while dragging and on stop
     //The activity never fetches directly audio data it simply sends commands to the session
     private fun setupClickListeners() {
+        binding.albumTextView.setOnClickListener { openAlbumPage() }
+        binding.artistTextView.setOnClickListener { openArtistPage() }
         binding.playPauseButton.setOnClickListener {
             mediaController?.let {
                 if (it.isPlaying) {
@@ -249,7 +273,14 @@ class PlayerActivity : AppCompatActivity() {
     private val playerListener = object : Player.Listener {
         override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
             binding.titleTextView.text = mediaMetadata.title
-            binding.artistTextView.text = mediaMetadata.artist
+            updateAlbumInfo(
+                mediaMetadata.albumTitle,
+                mediaMetadata.extras?.getString(MEDIA_METADATA_KEY_ALBUM_ID)
+            )
+            updateArtistInfo(
+                mediaMetadata.artist,
+                mediaMetadata.extras?.getString(MEDIA_METADATA_KEY_ARTIST_ID)
+            )
             Glide.with(this@PlayerActivity)
                 .load(mediaMetadata.artworkUri)
                 .into(binding.artworkImageView)
@@ -302,7 +333,14 @@ class PlayerActivity : AppCompatActivity() {
         if (hasMediaItem) {
             mediaController?.currentMediaItem?.mediaMetadata?.let { metadata ->
                 binding.titleTextView.text = metadata.title
-                binding.artistTextView.text = metadata.artist
+                updateAlbumInfo(
+                    metadata.albumTitle,
+                    metadata.extras?.getString(MEDIA_METADATA_KEY_ALBUM_ID)
+                )
+                updateArtistInfo(
+                    metadata.artist,
+                    metadata.extras?.getString(MEDIA_METADATA_KEY_ARTIST_ID)
+                )
                 Glide.with(this@PlayerActivity)
                     .load(metadata.artworkUri)
                     .into(binding.artworkImageView)
@@ -316,7 +354,8 @@ class PlayerActivity : AppCompatActivity() {
         } else {
             // Clear UI if no media item
             binding.titleTextView.text = "-"
-            binding.artistTextView.text = "-"
+            updateAlbumInfo(null, null)
+            updateArtistInfo("-", null)
             binding.currentTimeTextView.text = formatDuration(0)
             binding.totalDurationTextView.text = formatDuration(0)
             binding.seekBar.progress = 0
@@ -389,6 +428,50 @@ class PlayerActivity : AppCompatActivity() {
         Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
         Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
         else -> Player.REPEAT_MODE_OFF
+    }
+
+    private fun updateAlbumInfo(albumTitle: CharSequence?, albumId: String?) {
+        val normalizedId = albumId?.takeIf { it.isNotBlank() }
+        currentAlbumId = normalizedId
+        val title = albumTitle?.toString().orEmpty()
+        val hasTitle = title.isNotBlank()
+        binding.albumTextView.text = title
+        binding.albumTextView.isVisible = hasTitle
+        val enabled = hasTitle && normalizedId != null
+        binding.albumTextView.isEnabled = enabled
+        binding.albumTextView.alpha = if (enabled) 1f else BUTTON_DISABLED_ALPHA
+    }
+
+    private fun updateArtistInfo(artistName: CharSequence?, artistId: String?) {
+        val normalizedId = artistId?.takeIf { it.isNotBlank() }
+        currentArtistId = normalizedId
+        val name = artistName?.toString().orEmpty()
+        val hasName = name.isNotBlank()
+        binding.artistTextView.text = name
+        binding.artistTextView.isVisible = hasName
+        val enabled = hasName && normalizedId != null
+        binding.artistTextView.isEnabled = enabled
+        binding.artistTextView.alpha = if (enabled) 1f else BUTTON_DISABLED_ALPHA
+    }
+
+    private fun openAlbumPage() {
+        val albumId = currentAlbumId ?: return
+        val albumTitle = binding.albumTextView.text?.toString()
+        val intent = Intent(this, SongsActivity::class.java).apply {
+            putExtra(SongsActivity.EXTRA_ALBUM_ID, albumId)
+            if (!albumTitle.isNullOrBlank()) {
+                putExtra(SongsActivity.EXTRA_ALBUM_TITLE, albumTitle)
+            }
+        }
+        startActivity(intent)
+    }
+
+    private fun openArtistPage() {
+        val artistId = currentArtistId ?: return
+        val intent = Intent(this, AlbumActivity::class.java).apply {
+            putExtra(AlbumActivity.EXTRA_ARTIST_ID, artistId)
+        }
+        startActivity(intent)
     }
 
     private fun showQueueDialog() {
@@ -506,14 +589,4 @@ class PlayerActivity : AppCompatActivity() {
         }
         return items
     }
-
-    //Lifts Media3 metadata into my domain QueueSong
-    private fun MediaItem.toQueueSong(): QueueSong = QueueSong(
-        id = mediaId,
-        title = mediaMetadata.title?.toString().orEmpty(),
-        artist = mediaMetadata.artist?.toString(),
-        album = mediaMetadata.albumTitle?.toString(),
-        durationMs = null,
-        artworkUrl = mediaMetadata.artworkUri?.toString()
-    )
 }
