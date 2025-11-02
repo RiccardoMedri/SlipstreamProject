@@ -53,6 +53,20 @@ object DownloadComponents {
         }
     }
 
+    //Media3’s cache and DownloadManager store their indices in SQLite via this provider
+    //sharing a single provider between the cache and the manager keeps things consistent and efficient
+    private fun getDatabaseProvider(context: Context): DatabaseProvider {
+        return databaseProvider ?: synchronized(lock) {
+            databaseProvider ?: StandaloneDatabaseProvider(context.applicationContext).also { databaseProvider = it }
+        }
+    }
+
+    fun getDownloadCache(context: Context): Cache {
+        return downloadCache ?: synchronized(lock) {
+            downloadCache ?: createCache(context.applicationContext).also { downloadCache = it }
+        }
+    }
+
     private fun createDownloadManager(context: Context): DownloadManager {
         val db = getDatabaseProvider(context)
         val cache = getDownloadCache(context)
@@ -71,23 +85,13 @@ object DownloadComponents {
         }
     }
 
-    private fun getDatabaseProvider(context: Context): DatabaseProvider {
-        return databaseProvider ?: synchronized(lock) {
-            databaseProvider ?: StandaloneDatabaseProvider(context.applicationContext).also { databaseProvider = it }
-        }
-    }
-
-    fun getDownloadCache(context: Context): Cache {
-        return downloadCache ?: synchronized(lock) {
-            downloadCache ?: createCache(context.applicationContext).also { downloadCache = it }
-        }
-    }
-
+    //Creates cache which never automatically deletes
     private fun createCache(context: Context): Cache {
         val dir = getDownloadDirectory(context)
         return SimpleCache(dir, NoOpCacheEvictor(), getDatabaseProvider(context))
     }
 
+    //Returns directory where cache lives
     private fun getDownloadDirectory(context: Context): File {
         val externalDir = context.getExternalFilesDir(null)
         val parent = externalDir ?: context.filesDir

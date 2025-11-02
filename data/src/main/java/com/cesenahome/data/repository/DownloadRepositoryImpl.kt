@@ -40,9 +40,13 @@ class DownloadRepositoryImpl(
 ) : DownloadRepository {
 
     private val appContext = context.applicationContext
+
+    //Shared singleton from DownloadComponents
     private val downloadManager: DownloadManager = DownloadComponents.getDownloadManager(appContext)
     private val metadataStore = DownloadMetadataStore(appContext)
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    //The canonical set of song IDs whose downloads are completed
     private val downloadedSongsState = MutableStateFlow<Set<String>>(emptySet())
 
     private val albumIdsState: StateFlow<Set<String>> = combine(
@@ -101,6 +105,10 @@ class DownloadRepositoryImpl(
         removeCollection(CollectionType.PLAYLIST, playlistId)
 
     //Fetches all songs Uris and then queries all the uris for download
+    //Pages through Jellyfin, converts BaseItemDto to your Song,
+    //resolves stream URL for each, and returns a List
+    //Writes the set of song IDs into metadataStore for that collection
+    //For each song enqueueDownload
     private suspend fun downloadCollection(type: CollectionType, collectionId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -120,6 +128,11 @@ class DownloadRepositoryImpl(
         }
 
     //Creates the requestId and then sends remove command to the DownloadService
+    //Reads that collection’s song IDs from metadataStore
+    //Removes the collection entry from the store
+    //Reads all remaining collections from the store and determines,
+    //for each song previously in this collection, whether it is still referenced by any other album or playlist.
+    //If a song is not referenced anywhere, it computes its request ID and calls
     private suspend fun removeCollection(type: CollectionType, collectionId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -219,6 +232,9 @@ class DownloadRepositoryImpl(
         return payload.toByteArray(StandardCharsets.UTF_8)
     }
 
+    //Iterates over all downloads from the download index;
+    //if state == STATE_COMPLETED, it parses the song ID out of your request ID format ("song:<id>")
+    //and collects them into a set; then updates the MutableStateFlow
     private suspend fun refreshDownloadedSongs() {
         val completedIds = mutableSetOf<String>()
         withContext(Dispatchers.IO) {

@@ -13,14 +13,14 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ALBUM_ID
-import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ARTIST_ID
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.R
 import com.cesenahome.ui.player.PlayerActivity
-import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
-import com.cesenahome.ui.player.toQueueSong
+import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ALBUM_ID
+import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ARTIST_ID
+import com.cesenahome.ui.player.buildQueueSongs
+import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -102,12 +102,13 @@ class NowPlayingFabController(
     private fun openPlayer() {
         val controller = mediaController ?: return
         val currentItem = controller.currentMediaItem ?: return
-        val queueSongs = ArrayList<QueueSong>(controller.mediaItemCount)
-        for (index in 0 until controller.mediaItemCount) {
-            queueSongs += controller.getMediaItemAt(index).toQueueSong()
-        }
+
+        // Build queue from the shared mapper and make the type explicit (avoid isNotEmpty() ambiguity)
+        val queueSongs: ArrayList<QueueSong> = ArrayList(controller.buildQueueSongs())
+
         val durationMs = controller.duration.takeIf { it > 0 } ?: 0L
         val currentIndex = controller.currentMediaItemIndex.takeIf { it != C.INDEX_UNSET } ?: 0
+
         val intent = Intent(activity, PlayerActivity::class.java).apply {
             putExtra(PlayerActivityExtras.EXTRA_SONG_ID, currentItem.mediaId)
             putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, currentItem.mediaMetadata.title?.toString())

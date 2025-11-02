@@ -19,26 +19,27 @@ internal class DownloadMetadataStore(
         val playlists = stringPreferencesKey("playlists")
     }
 
+    //Both map the DataStore data to the decoded maps
     val albumSongsFlow: Flow<Map<String, Set<String>>> =
         context.downloadMetadataDataStore.data.map { prefs ->
             prefs[Keys.albums]?.let { deserialize(it) } ?: emptyMap()
         }
-
     val playlistSongsFlow: Flow<Map<String, Set<String>>> =
         context.downloadMetadataDataStore.data.map { prefs ->
             prefs[Keys.playlists]?.let { deserialize(it) } ?: emptyMap()
         }
 
+    //Read the current snapshot and return the set of song IDs for that collection
     suspend fun getAlbumSongs(albumId: String): Set<String> {
         val map = context.downloadMetadataDataStore.data.first()[Keys.albums]?.let { deserialize(it) } ?: emptyMap()
         return map[albumId] ?: emptySet()
     }
-
     suspend fun getPlaylistSongs(playlistId: String): Set<String> {
         val map = context.downloadMetadataDataStore.data.first()[Keys.playlists]?.let { deserialize(it) } ?: emptyMap()
         return map[playlistId] ?: emptySet()
     }
 
+    //Read current map, update that one entry and write back the serialized string
     suspend fun setAlbumSongs(albumId: String, songIds: Set<String>) {
         context.downloadMetadataDataStore.edit { prefs ->
             val current = prefs[Keys.albums]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
@@ -46,7 +47,6 @@ internal class DownloadMetadataStore(
             prefs[Keys.albums] = serialize(current)
         }
     }
-
     suspend fun setPlaylistSongs(playlistId: String, songIds: Set<String>) {
         context.downloadMetadataDataStore.edit { prefs ->
             val current = prefs[Keys.playlists]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
@@ -55,6 +55,7 @@ internal class DownloadMetadataStore(
         }
     }
 
+    //Remove the entry; if the resulting map is empty, the preference key itself is removed
     suspend fun removeAlbum(albumId: String) {
         context.downloadMetadataDataStore.edit { prefs ->
             val current = prefs[Keys.albums]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
@@ -66,7 +67,6 @@ internal class DownloadMetadataStore(
             }
         }
     }
-
     suspend fun removePlaylist(playlistId: String) {
         context.downloadMetadataDataStore.edit { prefs ->
             val current = prefs[Keys.playlists]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
@@ -79,11 +79,11 @@ internal class DownloadMetadataStore(
         }
     }
 
+    //Decode full maps
     suspend fun getAllAlbumEntries(): Map<String, Set<String>> {
         val prefs = context.downloadMetadataDataStore.data.first()
         return prefs[Keys.albums]?.let { deserialize(it) } ?: emptyMap()
     }
-
     suspend fun getAllPlaylistEntries(): Map<String, Set<String>> {
         val prefs = context.downloadMetadataDataStore.data.first()
         return prefs[Keys.playlists]?.let { deserialize(it) } ?: emptyMap()

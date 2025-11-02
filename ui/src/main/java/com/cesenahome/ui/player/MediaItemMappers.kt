@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.session.MediaController
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.domain.models.song.Song
 
@@ -80,6 +81,14 @@ fun MediaItem.toQueueSong(): QueueSong {
         durationMs = durationMs,
         artworkUrl = artworkUrl,
     )
+}
+
+fun MediaController.buildQueueSongs(): List<QueueSong> {
+    val items = ArrayList<QueueSong>(mediaItemCount)
+    for (index in 0 until mediaItemCount) {
+        items += getMediaItemAt(index).toQueueSong()
+    }
+    return items
 }
 
 private fun MediaMetadata.Builder.setExtrasIfPresent(artistId: String?, albumId: String?) {

@@ -29,12 +29,12 @@ class SlipstreamDownloadService : DownloadService(
         ensureNotificationChannel()
     }
 
-    ///Returns the DownloadManager to be used
+    ///Returns the DownloadManager initialized in DownloadComponents
     override fun getDownloadManager(): DownloadManager {
         return DownloadComponents.getDownloadManager(applicationContext)
     }
 
-    ///Returns an optional Scheduler
+    ///Returns a Scheduler to reschedule downloads if they fail or after reboot
     @RequiresPermission(Manifest.permission.RECEIVE_BOOT_COMPLETED)
     override fun getScheduler(): Scheduler? {
         return WorkManagerScheduler(applicationContext, WORK_NAME)
@@ -57,6 +57,7 @@ class SlipstreamDownloadService : DownloadService(
         )
     }
 
+    //Points to app’s launch Activity, so tapping the notification brings user back in
     private fun createContentIntent(): PendingIntent? {
         val launchIntent = packageManager?.getLaunchIntentForPackage(packageName) ?: return null
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

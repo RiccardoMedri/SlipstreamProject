@@ -20,17 +20,16 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivityPlayerBinding
 import com.cesenahome.ui.databinding.DialogQueueBottomSheetBinding
-import com.cesenahome.ui.player.toQueueSong
 import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.cesenahome.ui.songs.SongsActivity
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
-import java.util.ArrayList
 import java.util.Formatter
 import java.util.Locale
 
@@ -174,7 +173,7 @@ class PlayerActivity : AppCompatActivity() {
             .setIsBrowsable(false)
             .setIsPlayable(true)
 
-        val extras = Bundle()
+        val extras = android.os.Bundle()
         albumId?.let { extras.putString(MEDIA_METADATA_KEY_ALBUM_ID, it) }
         artistId?.let { extras.putString(MEDIA_METADATA_KEY_ARTIST_ID, it) }
         if (!extras.isEmpty) {
@@ -333,14 +332,8 @@ class PlayerActivity : AppCompatActivity() {
         if (hasMediaItem) {
             mediaController?.currentMediaItem?.mediaMetadata?.let { metadata ->
                 binding.titleTextView.text = metadata.title
-                updateAlbumInfo(
-                    metadata.albumTitle,
-                    metadata.extras?.getString(MEDIA_METADATA_KEY_ALBUM_ID)
-                )
-                updateArtistInfo(
-                    metadata.artist,
-                    metadata.extras?.getString(MEDIA_METADATA_KEY_ARTIST_ID)
-                )
+                updateAlbumInfo(metadata.albumTitle, metadata.extras?.getString(MEDIA_METADATA_KEY_ALBUM_ID))
+                updateArtistInfo(metadata.artist, metadata.extras?.getString(MEDIA_METADATA_KEY_ARTIST_ID))
                 Glide.with(this@PlayerActivity)
                     .load(metadata.artworkUri)
                     .into(binding.artworkImageView)
@@ -491,9 +484,6 @@ class PlayerActivity : AppCompatActivity() {
         val initialSongs = controller.buildQueueSongs()
         val adapter = QueueAdapter(initialSongs, controller.currentMediaItem?.mediaId)
 
-        binding.queueRecycler.layoutManager = LinearLayoutManager(this)
-        binding.queueRecycler.adapter = adapter
-
         val layoutManager = LinearLayoutManager(this)
         binding.queueRecycler.layoutManager = layoutManager
         binding.queueRecycler.adapter = adapter
@@ -577,16 +567,5 @@ class PlayerActivity : AppCompatActivity() {
         binding.queueRecycler.isVisible = hasItems
         binding.dragHint.isVisible = queueSongs.size > 1
         binding.emptyText.isVisible = !hasItems
-    }
-
-    //The queue dialog needs a domain-model list to render
-    //This helper hides the Media3 details and hands the adapter a clean list
-    //It’s only used to populate/update the queue UI
-    private fun MediaController.buildQueueSongs(): List<QueueSong> {
-        val items = ArrayList<QueueSong>(mediaItemCount)
-        for (index in 0 until mediaItemCount) {
-            items += getMediaItemAt(index).toQueueSong()
-        }
-        return items
     }
 }
