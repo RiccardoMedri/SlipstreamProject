@@ -31,49 +31,55 @@ class RepositoryProviderImpl(
         JellyfinApiClient(appContext = context)
     }
 
-    // Provide LoginRepository
+    private val sessionManager get() = jellyfinApiClient.session
+    private val mediaClient get() = jellyfinApiClient.media
+    private val playlistClient get() = jellyfinApiClient.playlist
+
     override val loginRepository: LoginRepository by lazy {
         LoginRepositoryImpl(
-            jellyfinApiClient = jellyfinApiClient,
-            sessionStore = sessionStore)
+            sessionManager = sessionManager,
+            sessionStore = sessionStore
+        )
     }
 
     override val homeRepository: HomepageRepository by lazy {
         HomepageRepositoryImpl(
-            jellyfinApiClient = jellyfinApiClient
+            mediaClient = mediaClient
         )
     }
 
     override val songRepository: SongRepository by lazy {
         SongRepositoryImpl(
-            jellyfinApiClient = jellyfinApiClient
+            mediaClient = mediaClient,
+            playlistClient = playlistClient,
         )
     }
 
     override val playerRepository: PlayerRepository by lazy {
         PlayerRepositoryImpl(
-            jellyfinApiClient = jellyfinApiClient
+            mediaClient = mediaClient
         )
     }
     override val albumRepository: AlbumRepository by lazy {
         AlbumRepositoryImpl(
-            apiClient = jellyfinApiClient
+            mediaClient = mediaClient
         )
     }
     override val artistRepository: ArtistRepository by lazy {
         ArtistRepositoryImpl(
-            apiClient = jellyfinApiClient
+            mediaClient = mediaClient
         )
     }
     override val playlistRepository: PlaylistRepository by lazy {
         PlaylistRepositoryImpl(
-            apiClient = jellyfinApiClient
+            mediaClient = mediaClient,
+            playlistClient = playlistClient,
         )
     }
     override val downloadRepository: DownloadRepository by lazy {
         DownloadRepositoryImpl(
             context = context,
-            jellyfinApiClient = jellyfinApiClient,
+            mediaClient = mediaClient,
         )
     }
 }

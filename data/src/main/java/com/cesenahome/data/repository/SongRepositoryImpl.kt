@@ -4,7 +4,8 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.cesenahome.data.paging.SongPagingSource
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
+import com.cesenahome.data.remote.playlist.JellyfinPlaylistClient
 import com.cesenahome.data.remote.toSong
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongPagingRequest
@@ -17,7 +18,8 @@ import kotlin.jvm.Volatile
 import kotlin.random.Random
 
 class SongRepositoryImpl(
-    private val jellyfinApiClient: JellyfinApiClient
+    private val mediaClient: JellyfinMediaClient,
+    private val playlistClient: JellyfinPlaylistClient,
 ) : SongRepository {
 
     @Volatile
@@ -32,19 +34,25 @@ class SongRepositoryImpl(
                 enablePlaceholders = false,
                 maxSize = pageSize * 5
             ),
-            pagingSourceFactory = { SongPagingSource( api = jellyfinApiClient, pageSize = pageSize, request = request) }
+            pagingSourceFactory = {
+                SongPagingSource(
+                    mediaClient = mediaClient,
+                    pageSize = pageSize,
+                    request = request,
+                )
+            }
         ).flow
     }
 
     override suspend fun getSongsList(page: Int, pageSize: Int): Result<List<Song>> = withContext(Dispatchers.IO) {
         try {
             val startIndex = page * pageSize
-            val dtoList = jellyfinApiClient.fetchSongs(
+            val dtoList = mediaClient.fetchSongs(
                 startIndex = startIndex,
                 limit = pageSize,
                 request = SongPagingRequest()
-            )
-            val songList = dtoList.map { it.toSong(jellyfinApiClient) }
+            ).getOrThrow()
+            val songList = dtoList.map { it.toSong(mediaClient) }
             Result.success(songList)
         } catch (e: Exception) {
             Result.failure(e)
@@ -54,17 +62,17 @@ class SongRepositoryImpl(
     override suspend fun getRandomSong(): Result<Song?> = withContext(Dispatchers.IO) {
         try {
             val total = cachedSongsCount?.takeIf { it > 0 }
-                ?: jellyfinApiClient.getSongsCount().also { count -> cachedSongsCount = count }
+                ?: mediaClient.getSongsCount().getOrThrow().also { count -> cachedSongsCount = count }
             if (total == null || total <= 0) {
                 return@withContext Result.success(null)
             }
             val randomIndex = Random.nextInt(total)
-            val dtoList = jellyfinApiClient.fetchSongs(
+            val dtoList = mediaClient.fetchSongs(
                 startIndex = randomIndex,
                 limit = 1,
                 request = SongPagingRequest()
-            )
-            val song = dtoList.firstOrNull()?.toSong(jellyfinApiClient)
+            ).getOrThrow()
+            val song = dtoList.firstOrNull()?.toSong(mediaClient)
             Result.success(song)
         } catch (e: Exception) {
             cachedSongsCount = null
@@ -73,19 +81,19 @@ class SongRepositoryImpl(
     }
 
     override suspend fun addSongToFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> {
-        val markResult = jellyfinApiClient.setAsFavourite(songId, isFavourite)
+        val markResult = playlistClient.setAsFavourite(songId, isFavourite)
         markResult.exceptionOrNull()?.let { return Result.failure(it) }
-        val addResult = jellyfinApiClient.addSongsToPlaylist(playlistId, listOf(songId))
+        val addResult = playlistClient.addSongsToPlaylist(playlistId, listOf(songId))
         addResult.exceptionOrNull()?.let { return Result.failure(it) }
 
         return Result.success(Unit)
     }
 
     override suspend fun removeSongFromFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> {
-        val markResult = jellyfinApiClient.setAsFavourite(songId, isFavourite)
+        val markResult = playlistClient.setAsFavourite(songId, isFavourite)
         markResult.exceptionOrNull()?.let { return Result.failure(it) }
 
-        val removeResult = jellyfinApiClient.removeSongsFromPlaylist(playlistId, listOf(songId))
+        val removeResult = playlistClient.removeSongsFromPlaylist(playlistId, listOf(songId))
         removeResult.exceptionOrNull()?.let { return Result.failure(it) }
 
         return Result.success(Unit)

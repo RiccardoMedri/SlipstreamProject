@@ -2,13 +2,13 @@ package com.cesenahome.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.data.remote.toSong
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongPagingRequest
 
 class SongPagingSource(
-    private val api: JellyfinApiClient,
+    private val mediaClient: JellyfinMediaClient,
     private val pageSize: Int,
     private val request: SongPagingRequest
 ) : PagingSource<Int, Song>() {
@@ -18,15 +18,15 @@ class SongPagingSource(
             val startIndex = params.key ?: 0
             val limit = params.loadSize.coerceAtMost(pageSize)
 
-            val page = api.fetchSongs(
+            val pageResult = mediaClient.fetchSongs(
                 startIndex = startIndex,
                 limit = limit,
                 request = request
-            )
+            ).getOrThrow()
 
-            val data = page.map { it.toSong(api) }
+            val data = pageResult.map { it.toSong(mediaClient) }
 
-            val nextKey = if (page.size < limit) null else startIndex + page.size
+            val nextKey = if (pageResult.size < limit) null else startIndex + pageResult.size
             val prevKey = if (startIndex == 0) null else (startIndex - pageSize).coerceAtLeast(0)
 
             LoadResult.Page(

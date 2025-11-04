@@ -4,7 +4,9 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.cesenahome.data.paging.PlaylistPagingSource
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
+import com.cesenahome.data.remote.playlist.JellyfinPlaylistClient
+import com.cesenahome.data.remote.util.parseUuidOrNull
 import com.cesenahome.domain.models.playlist.Playlist
 import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
 import com.cesenahome.domain.repository.PlaylistRepository
@@ -14,7 +16,8 @@ import kotlin.jvm.Volatile
 private const val FAVOURITE_PLAYLIST_NAME = "Favourite Songs"
 
 class PlaylistRepositoryImpl(
-    private val apiClient: JellyfinApiClient,
+    private val mediaClient: JellyfinMediaClient,
+    private val playlistClient: JellyfinPlaylistClient,
 ) : PlaylistRepository {
 
     @Volatile
@@ -34,7 +37,7 @@ class PlaylistRepositoryImpl(
             ),
             pagingSourceFactory = {
                 PlaylistPagingSource(
-                    apiClient = apiClient,
+                    mediaClient = mediaClient,
                     pageSize = pageSize,
                     request = request,
                 )
@@ -59,14 +62,14 @@ class PlaylistRepositoryImpl(
     }
 
     private suspend fun resolveFavouritePlaylistId(): Result<String> {
-        val existingResult = apiClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
+        val existingResult = playlistClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
         existingResult.exceptionOrNull()?.let { return Result.failure(it) }
 
         existingResult.getOrNull()?.id?.toString()
             ?.let { normalizePlaylistId(it) }
             ?.let { return Result.success(it) }
 
-        val createResult = apiClient.createPlaylist(FAVOURITE_PLAYLIST_NAME)
+        val createResult = playlistClient.createPlaylist(FAVOURITE_PLAYLIST_NAME)
         createResult.exceptionOrNull()?.let { return Result.failure(it) }
 
         val createdId = createResult.getOrNull()?.let { normalizePlaylistId(it) }
@@ -74,7 +77,7 @@ class PlaylistRepositoryImpl(
             return Result.success(createdId)
         }
 
-        val refreshedResult = apiClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
+        val refreshedResult = playlistClient.findPlaylistByName(FAVOURITE_PLAYLIST_NAME)
         refreshedResult.exceptionOrNull()?.let { return Result.failure(it) }
 
         val refreshedId = refreshedResult.getOrNull()?.id?.toString()?.let { normalizePlaylistId(it) }
@@ -84,11 +87,11 @@ class PlaylistRepositoryImpl(
     }
 
     private suspend fun syncFavouritePlaylist(playlistId: String): Result<Unit> {
-        val favouritesResult = apiClient.fetchFavouriteSongIds()
+        val favouritesResult = playlistClient.fetchFavouriteSongIds()
         favouritesResult.exceptionOrNull()?.let { return Result.failure(it) }
         val favouriteIds = favouritesResult.getOrNull()?.toSet() ?: emptySet()
 
-        val playlistSongsResult = apiClient.fetchPlaylistSongIds(playlistId)
+        val playlistSongsResult = playlistClient.fetchPlaylistSongIds(playlistId)
         playlistSongsResult.exceptionOrNull()?.let { return Result.failure(it) }
         val playlistSongIds = playlistSongsResult.getOrNull()?.toSet() ?: emptySet()
 
@@ -96,12 +99,12 @@ class PlaylistRepositoryImpl(
         val songsToRemove = playlistSongIds - favouriteIds
 
         if (songsToAdd.isNotEmpty()) {
-            val addResult = apiClient.addSongsToPlaylist(playlistId, songsToAdd.toList())
+            val addResult = playlistClient.addSongsToPlaylist(playlistId, songsToAdd.toList())
             addResult.exceptionOrNull()?.let { return Result.failure(it) }
         }
 
         if (songsToRemove.isNotEmpty()) {
-            val removeResult = apiClient.removeSongsFromPlaylist(playlistId, songsToRemove.toList())
+            val removeResult = playlistClient.removeSongsFromPlaylist(playlistId, songsToRemove.toList())
             removeResult.exceptionOrNull()?.let { return Result.failure(it) }
         }
 
@@ -109,6 +112,6 @@ class PlaylistRepositoryImpl(
     }
 
     private fun normalizePlaylistId(rawId: String): String? {
-        return apiClient.parseUuidOrNull(rawId)?.toString()
+        return rawId.parseUuidOrNull()?.toString()
     }
 }

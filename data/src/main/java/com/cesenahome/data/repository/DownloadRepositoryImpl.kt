@@ -12,7 +12,7 @@ import androidx.media3.exoplayer.offline.DownloadService
 import com.cesenahome.data.download.DownloadComponents
 import com.cesenahome.data.download.DownloadMetadataStore
 import com.cesenahome.data.download.SlipstreamDownloadService
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.data.remote.toSong
 import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.repository.DownloadRepository
@@ -36,7 +36,7 @@ import java.util.LinkedHashMap
 @UnstableApi
 class DownloadRepositoryImpl(
     context: Context,
-    private val jellyfinApiClient: JellyfinApiClient,
+    private val mediaClient: JellyfinMediaClient,
 ) : DownloadRepository {
 
     private val appContext = context.applicationContext
@@ -105,7 +105,7 @@ class DownloadRepositoryImpl(
         removeCollection(CollectionType.PLAYLIST, playlistId)
 
     //Fetches all songs Uris and then queries all the uris for download
-    //Pages through Jellyfin, converts BaseItemDto to your Song,
+    //Pages through Jellyfin, converts BaseItemDto to Song,
     //resolves stream URL for each, and returns a List
     //Writes the set of song IDs into metadataStore for that collection
     //For each song enqueueDownload
@@ -131,7 +131,7 @@ class DownloadRepositoryImpl(
     //Reads that collection’s song IDs from metadataStore
     //Removes the collection entry from the store
     //Reads all remaining collections from the store and determines,
-    //for each song previously in this collection, whether it is still referenced by any other album or playlist.
+    //for each song previously in this collection, whether it is still referenced by any other album or playlist
     //If a song is not referenced anywhere, it computes its request ID and calls
     private suspend fun removeCollection(type: CollectionType, collectionId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -181,15 +181,15 @@ class DownloadRepositoryImpl(
         val result = LinkedHashMap<String, DownloadSong>()
         var startIndex = 0
         while (true) {
-            val items: List<BaseItemDto> = jellyfinApiClient.fetchSongs(
+            val items: List<BaseItemDto> = mediaClient.fetchSongs(
                 startIndex = startIndex,
                 limit = pageSize,
                 request = request,
-            )
+            ).getOrThrow()
             if (items.isEmpty()) break
             items.forEach { item ->
-                val song = item.toSong(jellyfinApiClient)
-                val url = jellyfinApiClient.getAudio(song.id)
+                val song = item.toSong(mediaClient)
+                val url = mediaClient.resolveAudioUrl(song.id).getOrNull()
                 if (!url.isNullOrBlank()) {
                     result[song.id] = DownloadSong(song.id, url)
                 }
@@ -200,7 +200,7 @@ class DownloadRepositoryImpl(
         return result.values.toList()
     }
 
-    //Creates DownloadRequest and send it to my DownloadService
+    //Creates DownloadRequest and send it to DownloadService
     private fun enqueueDownload(song: DownloadSong, type: CollectionType, collectionId: String) {
         val requestId = requestIdForSong(song.id)
         val existing = try {
@@ -233,7 +233,7 @@ class DownloadRepositoryImpl(
     }
 
     //Iterates over all downloads from the download index;
-    //if state == STATE_COMPLETED, it parses the song ID out of your request ID format ("song:<id>")
+    //if state == STATE_COMPLETED, it parses the song ID out of request ID format ("song:<id>")
     //and collects them into a set; then updates the MutableStateFlow
     private suspend fun refreshDownloadedSongs() {
         val completedIds = mutableSetOf<String>()

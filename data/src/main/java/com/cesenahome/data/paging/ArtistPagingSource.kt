@@ -2,30 +2,30 @@ package com.cesenahome.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.data.remote.toArtist
 import com.cesenahome.domain.models.artist.Artist
 import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class ArtistPagingSource(
-    private val apiClient: JellyfinApiClient,
+    private val mediaClient: JellyfinMediaClient,
     private val pageSize: Int,
     private val request: ArtistPagingRequest
 ) : PagingSource<Int, Artist>() {
-    
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Artist> {
         return try {
             val startIndex = params.key ?: 0
             val limit = params.loadSize.coerceAtMost(pageSize)
 
-            val artistDtoList: List<BaseItemDto> = apiClient.fetchArtists(
+            val artistDtoList: List<BaseItemDto> = mediaClient.fetchArtists(
                 startIndex = startIndex,
                 limit = limit,
                 request = request
-            )
+            ).getOrThrow()
 
-            val artistList = artistDtoList.map { it.toArtist(apiClient) }
+            val artistList = artistDtoList.map { it.toArtist(mediaClient) }
 
             val nextKey = if (artistDtoList.size < limit) null else startIndex + artistDtoList.size
             val prevKey = if (startIndex == 0) null else (startIndex - pageSize).coerceAtLeast(0)

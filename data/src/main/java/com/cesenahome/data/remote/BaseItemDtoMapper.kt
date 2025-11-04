@@ -1,5 +1,6 @@
 package com.cesenahome.data.remote
 
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.domain.models.album.Album
 import com.cesenahome.domain.models.artist.Artist
 import com.cesenahome.domain.models.playlist.Playlist
@@ -7,7 +8,7 @@ import com.cesenahome.domain.models.song.Song
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
 
-fun BaseItemDto.toSong(apiClient: JellyfinApiClient): Song {
+fun BaseItemDto.toSong(mediaClient: JellyfinMediaClient): Song {
     val ticks = this.runTimeTicks
     val idStr = this.id?.toString().orEmpty()
     val primaryTag = this.imageTags?.get(ImageType.PRIMARY) ?: this.albumPrimaryImageTag
@@ -20,13 +21,13 @@ fun BaseItemDto.toSong(apiClient: JellyfinApiClient): Song {
         album = this.album,
         albumId = this.albumId?.toString(),
         durationMs = ticks?.let { it / 10_000L },
-        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 256),
+        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 256).getOrNull(),
         isFavorite = this.userData?.isFavorite == true,
         isDownloaded = false,
     )
 }
 
-fun BaseItemDto.toAlbum(apiClient: JellyfinApiClient): Album {
+fun BaseItemDto.toAlbum(mediaClient: JellyfinMediaClient): Album {
     val idStr = this.id?.toString().orEmpty()
     val primaryTag = this.imageTags?.get(ImageType.PRIMARY)
     val albumArtistName = this.albumArtist ?: this.artists?.firstOrNull()
@@ -35,25 +36,25 @@ fun BaseItemDto.toAlbum(apiClient: JellyfinApiClient): Album {
         id = idStr,
         title = this.name.orEmpty(),
         artist = albumArtistName,
-        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 1080),
+        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 1080).getOrNull(),
         songs = emptyList(),
         isDownloaded = false,
     )
 }
 
-fun BaseItemDto.toArtist(apiClient: JellyfinApiClient): Artist {
+fun BaseItemDto.toArtist(mediaClient: JellyfinMediaClient): Artist {
     val idStr = this.id?.toString().orEmpty()
     val primaryTag = this.imageTags?.get(ImageType.PRIMARY)
 
     return Artist(
         id = idStr,
         name = this.name.orEmpty(),
-        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 1080),
+        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 1080).getOrNull(),
         albums = emptyList()
     )
 }
 
-fun BaseItemDto.toPlaylist(apiClient: JellyfinApiClient): Playlist {
+fun BaseItemDto.toPlaylist(mediaClient: JellyfinMediaClient): Playlist {
     val idStr = this.id?.toString().orEmpty()
     val primaryTag = this.imageTags?.get(ImageType.PRIMARY)
     val ticks = this.runTimeTicks
@@ -63,7 +64,7 @@ fun BaseItemDto.toPlaylist(apiClient: JellyfinApiClient): Playlist {
         name = this.name.orEmpty(),
         songCount = this.songCount ?: this.childCount,
         durationMs = ticks?.let { it / 10_000L },
-        artworkUrl = apiClient.getImage(itemId = idStr, imageTag = primaryTag, maxSize = 512),
+        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 512).getOrNull(),
         isDownloaded = false,
     )
 }

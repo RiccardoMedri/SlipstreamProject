@@ -2,14 +2,14 @@ package com.cesenahome.data.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.data.remote.toAlbum
 import com.cesenahome.domain.models.album.Album
 import com.cesenahome.domain.models.album.AlbumPagingRequest
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 class AlbumPagingSource(
-    private val apiClient: JellyfinApiClient,
+    private val mediaClient: JellyfinMediaClient,
     private val pageSize: Int,
     private val request: AlbumPagingRequest
 ) : PagingSource<Int, Album>() {
@@ -19,13 +19,13 @@ class AlbumPagingSource(
             val startIndex = params.key ?: 0
             val limit = params.loadSize.coerceAtMost(pageSize)
 
-            val albumDtoList: List<BaseItemDto> = apiClient.fetchAlbums(
+            val albumDtoList: List<BaseItemDto> = mediaClient.fetchAlbums(
                 startIndex = startIndex,
                 limit = limit,
                 request = request
-            )
+            ).getOrThrow()
 
-            val albumList = albumDtoList.map { it.toAlbum(apiClient) }
+            val albumList = albumDtoList.map { it.toAlbum(mediaClient) }
 
             val nextKey = if (albumDtoList.size < limit) null else startIndex + albumDtoList.size
             val prevKey = if (startIndex == 0) null else (startIndex - pageSize).coerceAtLeast(0)

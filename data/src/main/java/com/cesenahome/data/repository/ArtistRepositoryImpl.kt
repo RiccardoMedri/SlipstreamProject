@@ -4,14 +4,14 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.cesenahome.data.paging.ArtistPagingSource
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.domain.models.artist.Artist
 import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import com.cesenahome.domain.repository.ArtistRepository
 import kotlinx.coroutines.flow.Flow
 
 class ArtistRepositoryImpl(
-    private val apiClient: JellyfinApiClient
+    private val mediaClient: JellyfinMediaClient
 ) : ArtistRepository {
     override fun pagingArtists(pageSize: Int, request: ArtistPagingRequest): Flow<PagingData<Artist>> {
         return Pager(
@@ -22,7 +22,7 @@ class ArtistRepositoryImpl(
                 enablePlaceholders = false,
                 maxSize = pageSize * 5
             ),
-            pagingSourceFactory = { ArtistPagingSource(apiClient, pageSize, request) }
+            pagingSourceFactory = { ArtistPagingSource(mediaClient, pageSize, request) }
         ).flow
     }
 }

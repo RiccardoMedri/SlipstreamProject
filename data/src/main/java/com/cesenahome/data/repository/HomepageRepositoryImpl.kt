@@ -1,7 +1,7 @@
 package com.cesenahome.data.repository
 
 
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.domain.models.homepage.HomeDestination
 import com.cesenahome.domain.models.homepage.HomeMenuItem
 import com.cesenahome.domain.models.homepage.LibraryCounts
@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class HomepageRepositoryImpl(
-    private val jellyfinApiClient: JellyfinApiClient
+    private val mediaClient: JellyfinMediaClient
 ) : HomepageRepository {
 
     override suspend fun getHomepageMenu(): List<HomeMenuItem> = withContext(Dispatchers.Default) {
@@ -25,10 +25,10 @@ class HomepageRepositoryImpl(
 
     override suspend fun getLibraryCounts(): Result<LibraryCounts> = withContext(Dispatchers.IO) {
         runCatching {
-            val artists   = jellyfinApiClient.getArtistsCount()
-            val albums    = jellyfinApiClient.getAlbumsCount()
-            val playlists = jellyfinApiClient.getPlaylistsCount()
-            val songs     = jellyfinApiClient.getSongsCount()
+            val artists   = mediaClient.getArtistsCount().getOrThrow()
+            val albums    = mediaClient.getAlbumsCount().getOrThrow()
+            val playlists = mediaClient.getPlaylistsCount().getOrThrow()
+            val songs     = mediaClient.getSongsCount().getOrThrow()
             LibraryCounts(artists, albums, playlists, songs)
         }
     }

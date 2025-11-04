@@ -1,6 +1,6 @@
 package com.cesenahome.data.repository
 
-import com.cesenahome.data.remote.JellyfinApiClient
+import com.cesenahome.data.remote.session.JellyfinSessionManager
 import com.cesenahome.domain.models.login.LoginResult
 import com.cesenahome.domain.models.login.SessionData
 import com.cesenahome.domain.models.login.User
@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class LoginRepositoryImpl(
-    private val jellyfinApiClient: JellyfinApiClient,
+    private val sessionManager: JellyfinSessionManager,
     private val sessionStore: SessionStore? = null
 ) : LoginRepository {
 
     // Holds the current user state. Emits null if no user is logged in.
-    private val _currentUser = MutableStateFlow<User?>(null)            //DO I NEED THE NON UNDERSCORED VERSION OF THIS VARIABLE?
+    private val _currentUser = MutableStateFlow<User?>(null)
 
     override fun getCurrentUser(): Flow<User?> = _currentUser.asStateFlow()
 
@@ -28,11 +28,11 @@ class LoginRepositoryImpl(
     override suspend fun login(serverUrl: String, username: String, password: String): LoginResult {
         return try {
 
-            jellyfinApiClient.initializeOrUpdateClient(serverUrl)
+            sessionManager.initializeOrUpdateClient(serverUrl)
 
-            val user: User = jellyfinApiClient.login(username, password).getOrThrow()
+            val user: User = sessionManager.login(username, password).getOrThrow()
 
-            val token = jellyfinApiClient.currentApi()?.accessToken ?: error("Missing access token after login")
+            val token = sessionManager.currentApi()?.accessToken ?: error("Missing access token after login")
 
             sessionStore?.let { store ->
                 withContext(Dispatchers.IO) {
@@ -58,11 +58,8 @@ class LoginRepositoryImpl(
     override suspend fun restoreSession(): LoginResult {
         val saved = withContext(Dispatchers.IO) { sessionStore?.load() } ?: return LoginResult.Error("No saved session")
         return runCatching {
-            jellyfinApiClient.initializeOrUpdateClient(saved.serverUrl)
-            jellyfinApiClient.currentApi()?.update(accessToken = saved.accessToken)
-            val userUuid = jellyfinApiClient.parseUuidOrNull(saved.userId)
-                ?: error("Invalid stored user identifier")
-            jellyfinApiClient.updateAuthenticatedUser(userUuid)
+            sessionManager.initializeOrUpdateClient(saved.serverUrl)
+            sessionManager.restoreSession(saved.accessToken, saved.userId).getOrThrow()
             val user = User(
                 userId = saved.userId,
                 name = saved.userName,
@@ -78,7 +75,7 @@ class LoginRepositoryImpl(
 
     override suspend fun logout() {
         _currentUser.value = null
-        jellyfinApiClient.clearSession()
+        sessionManager.clearSession()
         withContext(Dispatchers.IO) { sessionStore?.clear() }
     }
     private fun mapLoginError(t: Throwable): String {
