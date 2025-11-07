@@ -13,6 +13,8 @@ import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Scheduler
+import androidx.media3.exoplayer.workmanager.WorkManagerScheduler
+import com.cesenahome.data.R
 
 @UnstableApi
 class SlipstreamDownloadService : DownloadService(
