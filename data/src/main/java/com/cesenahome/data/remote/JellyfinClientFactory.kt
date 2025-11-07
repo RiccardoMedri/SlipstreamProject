@@ -22,6 +22,7 @@ class JellyfinClientFactory(
     }
 
     //A thread-safe slot that hold the currently configured ApiClient
+    //Guarantees that if multiple threads access or mutate it, it remains safe
     private val apiClientRef = AtomicReference<ApiClient?>()
 
     //Create or replace the current ApiClient when the user selects/enters a server

@@ -1,7 +1,6 @@
-package com.cesenahome.slipstream.player
+package com.cesenahome.slipstream.download
 
 import android.content.Context
-import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.exoplayer.offline.DownloadManager

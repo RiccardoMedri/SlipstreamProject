@@ -12,6 +12,7 @@
         android:roundIcon="@mipmap/app_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Slipstream">
+
     </application>
 
 </manifest>

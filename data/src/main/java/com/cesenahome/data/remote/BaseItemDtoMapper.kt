@@ -21,7 +21,7 @@ fun BaseItemDto.toSong(mediaClient: JellyfinMediaClient): Song {
         album = this.album,
         albumId = this.albumId?.toString(),
         durationMs = ticks?.let { it / 10_000L },
-        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 256).getOrNull(),
+        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 1080).getOrNull(),
         isFavorite = this.userData?.isFavorite == true,
         isDownloaded = false,
     )
@@ -64,7 +64,7 @@ fun BaseItemDto.toPlaylist(mediaClient: JellyfinMediaClient): Playlist {
         name = this.name.orEmpty(),
         songCount = this.songCount ?: this.childCount,
         durationMs = ticks?.let { it / 10_000L },
-        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 512).getOrNull(),
+        artworkUrl = mediaClient.resolveImageUrl(itemId = idStr, imageTag = primaryTag, maxSize = 1080).getOrNull(),
         isDownloaded = false,
     )
 }

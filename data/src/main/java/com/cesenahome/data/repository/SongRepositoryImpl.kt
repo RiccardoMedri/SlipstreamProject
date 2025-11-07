@@ -80,6 +80,7 @@ class SongRepositoryImpl(
         }
     }
 
+    //Adds songs to favourite and automatically append it to the F.S. playlist created at homepage launch
     override suspend fun addSongToFavourites(songId: String, isFavourite: Boolean, playlistId: String): Result<Unit> {
         val markResult = playlistClient.setAsFavourite(songId, isFavourite)
         markResult.exceptionOrNull()?.let { return Result.failure(it) }

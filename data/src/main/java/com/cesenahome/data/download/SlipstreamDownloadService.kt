@@ -7,13 +7,12 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.os.Build
 import androidx.annotation.RequiresPermission
+import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Scheduler
-import androidx.media3.exoplayer.workmanager.WorkManagerScheduler
-import com.cesenahome.data.R
 
 @UnstableApi
 class SlipstreamDownloadService : DownloadService(
@@ -70,7 +69,7 @@ class SlipstreamDownloadService : DownloadService(
 
     private fun ensureNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(NotificationManager::class.java)
+            val manager = ContextCompat.getSystemService(this, NotificationManager::class.java)
             val channel = NotificationChannel(
                 DownloadComponents.NOTIFICATION_CHANNEL_ID,
                 getString(R.string.download_channel_name),

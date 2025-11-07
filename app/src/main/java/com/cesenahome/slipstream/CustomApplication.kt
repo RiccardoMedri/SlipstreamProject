@@ -4,7 +4,7 @@ import android.app.Application
 import com.cesenahome.data.di.RepositoryProviderImpl
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.player.PlayerDownloadDependencies
-import com.cesenahome.slipstream.player.AppDownloadProvider
+import com.cesenahome.slipstream.download.AppDownloadProvider
 
 class CustomApplication : Application() {
     override fun onCreate() {

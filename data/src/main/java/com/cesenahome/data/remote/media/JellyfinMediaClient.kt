@@ -8,12 +8,14 @@ import com.cesenahome.domain.models.album.AlbumPagingRequest
 import com.cesenahome.domain.models.artist.ArtistPagingRequest
 import com.cesenahome.domain.models.playlist.PlaylistPagingRequest
 import com.cesenahome.domain.models.song.SongPagingRequest
+import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.audioApi
 import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.UUID
 
 class JellyfinMediaClient(
     private val clientFactory: JellyfinClientFactory,
@@ -29,30 +31,27 @@ class JellyfinMediaClient(
         limit: Int,
         request: SongPagingRequest,
     ): Result<List<BaseItemDto>> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val userId = sessionManager.currentUserId()
-            ?: return Result.failure(IllegalStateException("No authenticated user"))
+        return withApiAndUser { api, userId ->
+            val parentUuid = listOfNotNull(
+                request.albumId.parseUuidOrNull(),
+                request.playlistId.parseUuidOrNull(),
+            ).firstOrNull()
+            val hasParent = parentUuid != null
 
-        val parentUuid = listOfNotNull(
-            request.albumId.parseUuidOrNull(),
-            request.playlistId.parseUuidOrNull(),
-        ).firstOrNull()
-        val hasParent = parentUuid != null
-
-        return runCatching {
-            val response by api.itemsApi.getItems(
-                userId = userId,
-                parentId = parentUuid,
-                recursive = true,
-                includeItemTypes = listOf(BaseItemKind.AUDIO),
-                sortBy = buildSongSortBy(request.sortOption.field, hasParent),
-                sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
-                startIndex = startIndex,
-                limit = limit,
-                searchTerm = request.searchQuery.takeIfNotBlank()
-            )
-            response.items
+            runCatching {
+                val response by api.itemsApi.getItems(
+                    userId = userId,
+                    parentId = parentUuid,
+                    recursive = true,
+                    includeItemTypes = listOf(BaseItemKind.AUDIO),
+                    sortBy = buildSongSortBy(request.sortOption.field, hasParent),
+                    sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
+                    startIndex = startIndex,
+                    limit = limit,
+                    searchTerm = request.searchQuery.takeIfNotBlank()
+                )
+                response.items
+            }
         }
     }
 
@@ -61,24 +60,21 @@ class JellyfinMediaClient(
         limit: Int,
         request: AlbumPagingRequest,
     ): Result<List<BaseItemDto>> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val userId = sessionManager.currentUserId()
-            ?: return Result.failure(IllegalStateException("No authenticated user"))
-
-        return runCatching {
-            val response by api.itemsApi.getItems(
-                userId = userId,
-                albumArtistIds = request.artistId.parseUuidOrNull()?.let { listOf(it) },
-                recursive = true,
-                includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
-                sortBy = listOf(request.sortOption.field.toApiSortBy()),
-                sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
-                startIndex = startIndex,
-                limit = limit,
-                searchTerm = request.searchQuery.takeIfNotBlank()
-            )
-            response.items
+        return withApiAndUser { api, userId ->
+            runCatching {
+                val response by api.itemsApi.getItems(
+                    userId = userId,
+                    albumArtistIds = request.artistId.parseUuidOrNull()?.let { listOf(it) },
+                    recursive = true,
+                    includeItemTypes = listOf(BaseItemKind.MUSIC_ALBUM),
+                    sortBy = listOf(request.sortOption.field.toApiSortBy()),
+                    sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
+                    startIndex = startIndex,
+                    limit = limit,
+                    searchTerm = request.searchQuery.takeIfNotBlank()
+                )
+                response.items
+            }
         }
     }
 
@@ -87,23 +83,20 @@ class JellyfinMediaClient(
         limit: Int,
         request: PlaylistPagingRequest,
     ): Result<List<BaseItemDto>> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val userId = sessionManager.currentUserId()
-            ?: return Result.failure(IllegalStateException("No authenticated user"))
-
-        return runCatching {
-            val response by api.itemsApi.getItems(
-                userId = userId,
-                recursive = true,
-                includeItemTypes = listOf(BaseItemKind.PLAYLIST),
-                sortBy = listOf(request.sortOption.field.toApiSortBy()),
-                sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
-                startIndex = startIndex,
-                limit = limit,
-                searchTerm = request.searchQuery.takeIfNotBlank()
-            )
-            response.items
+        return withApiAndUser { api, userId ->
+            runCatching {
+                val response by api.itemsApi.getItems(
+                    userId = userId,
+                    recursive = true,
+                    includeItemTypes = listOf(BaseItemKind.PLAYLIST),
+                    sortBy = listOf(request.sortOption.field.toApiSortBy()),
+                    sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
+                    startIndex = startIndex,
+                    limit = limit,
+                    searchTerm = request.searchQuery.takeIfNotBlank()
+                )
+                response.items
+            }
         }
     }
 
@@ -112,23 +105,20 @@ class JellyfinMediaClient(
         limit: Int,
         request: ArtistPagingRequest,
     ): Result<List<BaseItemDto>> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val userId = sessionManager.currentUserId()
-            ?: return Result.failure(IllegalStateException("No authenticated user"))
-
-        return runCatching {
-            val response by api.itemsApi.getItems(
-                userId = userId,
-                recursive = true,
-                includeItemTypes = listOf(BaseItemKind.MUSIC_ARTIST),
-                sortBy = listOf(request.sortOption.field.toApiSortBy()),
-                sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
-                startIndex = startIndex,
-                limit = limit,
-                searchTerm = request.searchQuery.takeIfNotBlank()
-            )
-            response.items
+        return withApiAndUser { api, userId ->
+            runCatching {
+                val response by api.itemsApi.getItems(
+                    userId = userId,
+                    recursive = true,
+                    includeItemTypes = listOf(BaseItemKind.MUSIC_ARTIST),
+                    sortBy = listOf(request.sortOption.field.toApiSortBy()),
+                    sortOrder = listOf(request.sortOption.direction.toApiSortOrder()),
+                    startIndex = startIndex,
+                    limit = limit,
+                    searchTerm = request.searchQuery.takeIfNotBlank()
+                )
+                response.items
+            }
         }
     }
 
@@ -138,65 +128,75 @@ class JellyfinMediaClient(
     suspend fun getSongsCount(): Result<Int> = fetchItemCount(BaseItemKind.AUDIO)
 
     fun resolveImageUrl(itemId: String, imageTag: String?, maxSize: Int): Result<String?> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val id = itemId.parseUuidOrNull()
-            ?: return Result.failure(IllegalArgumentException("Invalid item identifier"))
-        return runCatching {
-            api.imageApi.getItemImageUrl(
-                itemId = id,
-                imageType = ImageType.PRIMARY,
-                tag = imageTag,
-                maxWidth = maxSize,
-                maxHeight = maxSize,
-                quality = 100
-            )
+        return withApi { api ->
+            val id = itemId.parseUuidOrNull()
+                ?: return@withApi Result.failure(IllegalArgumentException("Invalid item identifier"))
+            runCatching {
+                api.imageApi.getItemImageUrl(
+                    itemId = id,
+                    imageType = ImageType.PRIMARY,
+                    tag = imageTag,
+                    maxWidth = maxSize,
+                    maxHeight = maxSize,
+                    quality = 100
+                )
+            }
         }
     }
 
     //Return the stream URL to hand to ExoPlayer or the downloader.
     fun resolveAudioUrl(itemId: String): Result<String?> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val id = itemId.parseUuidOrNull()
-            ?: return Result.failure(IllegalArgumentException("Invalid song identifier"))
+        return withApi { api ->
+            val id = itemId.parseUuidOrNull()
+                ?: return@withApi Result.failure(IllegalArgumentException("Invalid song identifier"))
 
-        val streamUrl = api.audioApi.getAudioStreamUrl(
-            itemId = id,
-            static = true
-        ) ?: return Result.success(null)
+            val streamUrl = api.audioApi.getAudioStreamUrl(
+                itemId = id,
+                static = true
+            ) ?: return@withApi Result.success(null)
 
-        val token = sessionManager.accessToken()
-        if (token.isNullOrBlank()) return Result.success(streamUrl)
+            val token = sessionManager.accessToken()
+            if (token.isNullOrBlank()) return@withApi Result.success(streamUrl)
 
-        val uri = streamUrl.toUri()
-        val hasToken = uri.getQueryParameter("api_key").isNullOrEmpty().not()
-        val resolved = if (hasToken) {
-            streamUrl
-        } else {
-            uri.buildUpon()
-                .appendQueryParameter("api_key", token)
-                .build()
-                .toString()
+            val uri = streamUrl.toUri()
+            val hasToken = uri.getQueryParameter("api_key").isNullOrEmpty().not()
+            val resolved = if (hasToken) {
+                streamUrl
+            } else {
+                uri.buildUpon()
+                    .appendQueryParameter("api_key", token)
+                    .build()
+                    .toString()
+            }
+            Result.success(resolved)
         }
-        return Result.success(resolved)
     }
 
     private suspend fun fetchItemCount(vararg kinds: BaseItemKind): Result<Int> {
-        val api = clientFactory.currentApi()
-            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
-        val userId = sessionManager.currentUserId()
-            ?: return Result.failure(IllegalStateException("No authenticated user"))
-
-        return runCatching {
-            val response by api.itemsApi.getItems(
-                userId = userId,
-                recursive = true,
-                includeItemTypes = kinds.toList(),
-                startIndex = 0,
-                limit = 0
-            )
-            response.totalRecordCount ?: response.items.size
+        return withApiAndUser { api, userId ->
+            runCatching {
+                val response by api.itemsApi.getItems(
+                    userId = userId,
+                    recursive = true,
+                    includeItemTypes = kinds.toList(),
+                    startIndex = 0,
+                    limit = 0
+                )
+                response.totalRecordCount ?: response.items.size
+            }
         }
     }
+
+    private inline fun <T> withApi(block: (ApiClient) -> Result<T>): Result<T> {
+        val api = clientFactory.currentApi()
+            ?: return Result.failure(IllegalStateException("ApiClient not initialized"))
+        return block(api)
+    }
+
+    private inline fun <T> withApiAndUser(block: (ApiClient, UUID) -> Result<T>): Result<T> =
+        withApi { api ->
+            val userId = sessionManager.currentUserId()
+                ?: return@withApi Result.failure(IllegalStateException("No authenticated user"))
+            block(api, userId)
+        }
 }

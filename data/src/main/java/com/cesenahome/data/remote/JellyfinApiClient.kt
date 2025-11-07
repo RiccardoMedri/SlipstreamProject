@@ -25,7 +25,6 @@ class JellyfinApiClient(
 
     val playlist: JellyfinPlaylistClient = JellyfinPlaylistClient(
         clientFactory = clientFactory,
-        sessionManager = session,
-        mediaClient = media,
+        sessionManager = session
     )
 }

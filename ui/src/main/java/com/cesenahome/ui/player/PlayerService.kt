@@ -1,14 +1,16 @@
 package com.cesenahome.ui.player
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.concurrent.futures.CallbackToFutureAdapter
+import androidx.core.content.ContextCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
@@ -106,10 +108,14 @@ class PlayerService : MediaLibraryService() {
         }
     }
 
-    //Wires player, data sources, notifications, and session
+    //Wires player, data sources, notifications and session
     override fun onCreate() {
         super.onCreate()
-        ensureNotificationChannel()
+
+        val hasNotificationPermission = hasNotificationPermission()
+        if (hasNotificationPermission) {
+            ensureNotificationChannel()
+        }
 
         //Sets shared cache behind downloads and network fallback then gives this to DefaultMediaSourceFactory
         //so any media item the player loads will hit cache first and fall back to network automatically
@@ -135,10 +141,12 @@ class PlayerService : MediaLibraryService() {
                 addListener(playerListener)
             }
 
-        val notificationProvider = DefaultMediaNotificationProvider.Builder(this)
-            .setChannelId(CHANNEL_ID)
-            .build()
-        setMediaNotificationProvider(notificationProvider)
+        if (hasNotificationPermission) {
+            val notificationProvider = DefaultMediaNotificationProvider.Builder(this)
+                .setChannelId(CHANNEL_ID)
+                .build()
+            setMediaNotificationProvider(notificationProvider)
+        }
 
         //Builds a media library with my custom callback
         //ui modules controllers connect to this
@@ -166,6 +174,14 @@ class PlayerService : MediaLibraryService() {
         player.release()
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
     }
 
     //Creates the playback notification channel, then registers the becoming noisy receiver

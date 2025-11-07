@@ -29,8 +29,6 @@ class JellyfinSessionManager(
 
     fun currentUserId(): UUID? = currentUserId
 
-    fun requireUserId(): UUID = currentUserId ?: error("No authenticated user")
-
     fun accessToken(): String? = clientFactory.currentApi()?.accessToken
 
     fun updateAuthenticatedUser(userId: UUID?) {

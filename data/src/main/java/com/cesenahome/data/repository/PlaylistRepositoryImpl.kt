@@ -20,6 +20,7 @@ class PlaylistRepositoryImpl(
     private val playlistClient: JellyfinPlaylistClient,
 ) : PlaylistRepository {
 
+    //Avoids repeated lookups/creation of "Favourite Song" playlist
     @Volatile
     private var cachedFavouritePlaylistId: String? = null
 
@@ -45,6 +46,10 @@ class PlaylistRepositoryImpl(
         ).flow
     }
 
+    //Checks and ensure existence of F.S. playlist
+    //If it's not cached it tries searching it by name otherwise it creates it
+    //It then computes and applies the delta between the items at server (new favourite and removed favourite)
+    //Cache the result and return it
     override suspend fun ensureFavouritePlaylistId(): Result<String> {
         cachedFavouritePlaylistId?.let { return Result.success(it) }
 
@@ -86,6 +91,9 @@ class PlaylistRepositoryImpl(
             ?: Result.failure(IllegalStateException("Playlist creation did not return a valid identifier"))
     }
 
+    //If a user set a song as favourite in Jellyfin it must appear inside the F.P. playlist
+    //It fetches all song marked as favourite system-wide and all songs currently in the playlist
+    //It then process the differences and keep the favourite items in synch
     private suspend fun syncFavouritePlaylist(playlistId: String): Result<Unit> {
         val favouritesResult = playlistClient.fetchFavouriteSongIds()
         favouritesResult.exceptionOrNull()?.let { return Result.failure(it) }

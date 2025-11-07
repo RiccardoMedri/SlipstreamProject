@@ -6,12 +6,9 @@ import androidx.media3.database.DatabaseProvider
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.Cache
-import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.DownloadManager
-import androidx.media3.exoplayer.offline.DownloaderFactory
-import androidx.media3.exoplayer.offline.DefaultDownloaderFactory
 import androidx.media3.exoplayer.offline.DownloadNotificationHelper
 import java.io.File
 import java.util.concurrent.Executors
@@ -20,7 +17,7 @@ import java.util.concurrent.Executors
 object DownloadComponents {
 
     private const val DOWNLOAD_FOLDER = "media_downloads"
-    internal const val NOTIFICATION_CHANNEL_ID = "slipstream_downloads"
+    const val NOTIFICATION_CHANNEL_ID = "slipstream_downloads"
 
     private val lock = Any()
 
