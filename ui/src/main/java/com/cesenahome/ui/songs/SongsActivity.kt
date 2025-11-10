@@ -9,11 +9,12 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -28,6 +29,7 @@ import com.cesenahome.domain.models.song.SongSortField
 import com.cesenahome.domain.models.misc.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
+import com.cesenahome.ui.common.applySystemBarsInsets
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
@@ -82,6 +84,13 @@ class SongsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val initialFabBottomPadding = binding.nowPlayingFab.paddingBottom
+        applySystemBarsInsets(binding.root) { insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.nowPlayingFab.updatePadding(bottom = initialFabBottomPadding + systemBars.bottom)
+        }
+
         nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
         setupToolbar()
@@ -276,7 +285,7 @@ class SongsActivity : AppCompatActivity() {
             menuItem.isVisible = true
             menuItem.isEnabled = !state.inProgress
             if (state.isDownloaded) {
-                menuItem.setIcon(R.drawable.ic_downloaded)
+                menuItem.setIcon(R.drawable.ic_delete_offline)
                 menuItem.title = getString(R.string.menu_remove_download)
             } else {
                 menuItem.setIcon(R.drawable.ic_download)

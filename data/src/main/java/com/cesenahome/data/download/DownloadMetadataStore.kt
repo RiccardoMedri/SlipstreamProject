@@ -1,8 +1,9 @@
 package com.cesenahome.data.download
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -14,103 +15,84 @@ internal class DownloadMetadataStore(
     private val context: Context,
 ) {
 
-    private object Keys {
-        val albums = stringPreferencesKey("albums")
-        val playlists = stringPreferencesKey("playlists")
+    private companion object {
+        private const val ALBUM_PREFIX = "albums:"
+        private const val PLAYLIST_PREFIX = "playlists:"
     }
 
-    //Both map the DataStore data to the decoded maps
+    private fun albumKey(id: String) = stringSetPreferencesKey("$ALBUM_PREFIX$id")
+    private fun playlistKey(id: String) = stringSetPreferencesKey("$PLAYLIST_PREFIX$id")
+
+    private fun filterEntries(
+        prefs: Preferences,
+        prefix: String,
+    ): Map<String, Set<String>> {
+        return buildMap {
+            prefs.asMap().forEach { (key, value) ->
+                if (key.name.startsWith(prefix)) {
+                    val id = key.name.removePrefix(prefix)
+                    @Suppress("UNCHECKED_CAST")
+                    val songs = value as? Set<String> ?: emptySet()
+                    put(id, songs)
+                }
+            }
+        }
+    }
+
+    // Flows of aggregated maps
     val albumSongsFlow: Flow<Map<String, Set<String>>> =
         context.downloadMetadataDataStore.data.map { prefs ->
-            prefs[Keys.albums]?.let { deserialize(it) } ?: emptyMap()
+            filterEntries(prefs, ALBUM_PREFIX)
         }
+
     val playlistSongsFlow: Flow<Map<String, Set<String>>> =
         context.downloadMetadataDataStore.data.map { prefs ->
-            prefs[Keys.playlists]?.let { deserialize(it) } ?: emptyMap()
+            filterEntries(prefs, PLAYLIST_PREFIX)
         }
 
-    //Read the current snapshot and return the set of song IDs for that collection
+    // Point lookups
     suspend fun getAlbumSongs(albumId: String): Set<String> {
-        val map = context.downloadMetadataDataStore.data.first()[Keys.albums]?.let { deserialize(it) } ?: emptyMap()
-        return map[albumId] ?: emptySet()
-    }
-    suspend fun getPlaylistSongs(playlistId: String): Set<String> {
-        val map = context.downloadMetadataDataStore.data.first()[Keys.playlists]?.let { deserialize(it) } ?: emptyMap()
-        return map[playlistId] ?: emptySet()
+        val key = albumKey(albumId)
+        return context.downloadMetadataDataStore.data.first()[key] ?: emptySet()
     }
 
-    //Read current map, update that one entry and write back the serialized string
+    suspend fun getPlaylistSongs(playlistId: String): Set<String> {
+        val key = playlistKey(playlistId)
+        return context.downloadMetadataDataStore.data.first()[key] ?: emptySet()
+    }
+
+    // Writes
     suspend fun setAlbumSongs(albumId: String, songIds: Set<String>) {
         context.downloadMetadataDataStore.edit { prefs ->
-            val current = prefs[Keys.albums]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
-            current[albumId] = songIds
-            prefs[Keys.albums] = serialize(current)
+            val key = albumKey(albumId)
+            if (songIds.isEmpty()) prefs.remove(key) else prefs[key] = songIds
         }
     }
+
     suspend fun setPlaylistSongs(playlistId: String, songIds: Set<String>) {
         context.downloadMetadataDataStore.edit { prefs ->
-            val current = prefs[Keys.playlists]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
-            current[playlistId] = songIds
-            prefs[Keys.playlists] = serialize(current)
+            val key = playlistKey(playlistId)
+            if (songIds.isEmpty()) prefs.remove(key) else prefs[key] = songIds
         }
     }
 
-    //Remove the entry; if the resulting map is empty, the preference key itself is removed
+    // Removes
     suspend fun removeAlbum(albumId: String) {
-        context.downloadMetadataDataStore.edit { prefs ->
-            val current = prefs[Keys.albums]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
-            current.remove(albumId)
-            if (current.isEmpty()) {
-                prefs.remove(Keys.albums)
-            } else {
-                prefs[Keys.albums] = serialize(current)
-            }
-        }
-    }
-    suspend fun removePlaylist(playlistId: String) {
-        context.downloadMetadataDataStore.edit { prefs ->
-            val current = prefs[Keys.playlists]?.let { deserialize(it).toMutableMap() } ?: mutableMapOf()
-            current.remove(playlistId)
-            if (current.isEmpty()) {
-                prefs.remove(Keys.playlists)
-            } else {
-                prefs[Keys.playlists] = serialize(current)
-            }
-        }
+        context.downloadMetadataDataStore.edit { it.remove(albumKey(albumId)) }
     }
 
-    //Decode full maps
+    suspend fun removePlaylist(playlistId: String) {
+        context.downloadMetadataDataStore.edit { it.remove(playlistKey(playlistId)) }
+    }
+
+    // Aggregated snapshots
     suspend fun getAllAlbumEntries(): Map<String, Set<String>> {
         val prefs = context.downloadMetadataDataStore.data.first()
-        return prefs[Keys.albums]?.let { deserialize(it) } ?: emptyMap()
+        return filterEntries(prefs, ALBUM_PREFIX)
     }
+
     suspend fun getAllPlaylistEntries(): Map<String, Set<String>> {
         val prefs = context.downloadMetadataDataStore.data.first()
-        return prefs[Keys.playlists]?.let { deserialize(it) } ?: emptyMap()
-    }
-
-    private fun serialize(map: Map<String, Set<String>>): String =
-        map.entries.joinToString(separator = "|") { (key, values) ->
-            buildString {
-                append(key.replace("|", ""))
-                append(':')
-                append(values.joinToString(separator = ",") { it.replace(",", "") })
-            }
-        }
-
-    private fun deserialize(raw: String): Map<String, Set<String>> {
-        if (raw.isBlank()) return emptyMap()
-        return raw.split('|')
-            .filter { it.contains(':') }
-            .associate { entry ->
-                val parts = entry.split(':', limit = 2)
-                val key = parts[0]
-                val values = parts.getOrNull(1)
-                    ?.split(',')
-                    ?.filter { it.isNotBlank() }
-                    ?.toSet()
-                    ?: emptySet()
-                key to values
-            }
+        return filterEntries(prefs, PLAYLIST_PREFIX)
     }
 }

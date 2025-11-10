@@ -10,8 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.cesenahome.domain.di.UseCaseProvider
 import com.cesenahome.domain.models.login.LoginResult
@@ -19,6 +17,7 @@ import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ActivitySplashBinding
 import com.cesenahome.ui.homepage.HomepageActivity
 import com.cesenahome.ui.login.LoginActivity
+import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -31,10 +30,11 @@ class SplashActivity : AppCompatActivity() {
 
     private val notificationPermissionLauncher: ActivityResultLauncher<String> =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (!isGranted) {
+            if (isGranted) {
+                attemptSessionRestore()
+            } else {
                 handleNotificationPermissionDenied()
             }
-            attemptSessionRestore()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,64 +44,53 @@ class SplashActivity : AppCompatActivity() {
         binding = ActivitySplashBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupWindowInsets()
         if (shouldRequestNotificationPermission()) {
-            maybeShowNotificationPermissionRationale()
+            // Two choices only: allow (system prompt) or deny (system prompt)
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
+            // Already granted or not needed on this Android version
             attemptSessionRestore()
-        }
-    }
-
-    private fun setupWindowInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
         }
     }
 
     private fun shouldRequestNotificationPermission(): Boolean {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-                PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun maybeShowNotificationPermissionRationale() {
-        if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-            Snackbar.make(
-                binding.root,
-                R.string.notification_permission_rationale,
-                Snackbar.LENGTH_LONG
-            ).show()
-        }
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     }
 
     private fun handleNotificationPermissionDenied() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-
-        if (!shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-            Snackbar.make(
-                binding.root,
-                R.string.notification_permission_denied,
-                Snackbar.LENGTH_LONG
-            ).setAction(R.string.notification_permission_settings_action) {
-                openNotificationSettings()
-            }.show()
-        } else {
-            Snackbar.make(
-                binding.root,
-                R.string.notification_permission_rationale,
-                Snackbar.LENGTH_SHORT
-            ).show()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // Not applicable below 33; just proceed
+            attemptSessionRestore()
+            return
         }
+
+        val needsSettings = !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        val snackbar = if (needsSettings) {
+            Snackbar.make(binding.root, R.string.notification_permission_denied, Snackbar.LENGTH_LONG)
+                .setAction(R.string.notification_permission_settings_action) {
+                    openNotificationSettings()
+                }
+        } else {
+            Snackbar.make(binding.root, R.string.notification_permission_rationale, Snackbar.LENGTH_SHORT)
+        }
+
+        // App can't function without this permission per requirements: close after informing user
+        snackbar.addCallback(object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
+            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                super.onDismissed(transientBottomBar, event)
+                finishAffinity()
+            }
+        })
+        snackbar.show()
     }
 
     private fun openNotificationSettings() {
-        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-            putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-        }
-        startActivity(intent)
+        startActivity(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            }
+        )
     }
 
     private fun attemptSessionRestore() {
@@ -110,9 +99,7 @@ class SplashActivity : AppCompatActivity() {
             val result = restoreSessionUseCase()
             val elapsed = System.currentTimeMillis() - startTime
             val remainingDelay = splashDurationMs - elapsed
-            if (remainingDelay > 0) {
-                delay(remainingDelay)
-            }
+            if (remainingDelay > 0) delay(remainingDelay)
 
             when (result) {
                 is LoginResult.Success -> navigateToHomepage()

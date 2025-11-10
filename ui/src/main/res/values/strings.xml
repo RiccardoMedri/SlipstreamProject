@@ -2,77 +2,119 @@
     <string name="app_name">Slipstream</string>
     <string name="unknown">Unknown</string>
     <string name="splash_image_desc">Slipstream Splash Page Image</string>
+
     <string name="server_url_hint">Server URL (e.g., http://localhost:8096)</string>
     <string name="username_hint">Username</string>
     <string name="password_hint">Password</string>
     <string name="login_button_text">Login</string>
+
     <string name="cd_album_art">Album art</string>
+    <string name="cd_playlist_art">Playlist artwork</string>
+
     <string name="playback_channel_name">Playback</string>
+
     <string name="title_songs">Songs</string>
     <string name="title_albums">Albums</string>
     <string name="title_artists">Artists</string>
     <string name="title_playlists">Playlists</string>
+
+    <string name="homepage_title">Your Library</string>
+    <string name="empty_state_no_songs">No songs found</string>
+
     <string name="sort_field_default">Sort: Name</string>
     <string name="sort_order_default">Order: Ascending</string>
+
     <string name="songs_sort_by_name">Name</string>
     <string name="songs_sort_by_album_artist">Album artist</string>
     <string name="songs_sort_by_date_added">Date added</string>
+
     <string name="albums_sort_by_title">Title</string>
     <string name="albums_sort_by_artist">Artist</string>
     <string name="albums_sort_by_year">Year</string>
     <string name="albums_sort_by_date_added">Date added</string>
+
     <string name="artists_sort_by_name">Name</string>
     <string name="artists_sort_by_date_added">Date added</string>
+
     <string name="playlists_sort_by_name">Name</string>
     <string name="playlists_sort_by_date_added">Date added</string>
+
     <string name="sort_order_ascending">Ascending</string>
     <string name="sort_order_descending">Descending</string>
+
     <string name="sort_field_label">Sort: %1$s</string>
     <string name="sort_order_label">Order: %1$s</string>
+
     <string name="action_search">Search</string>
+
     <string name="search_hint_artists">Search artists</string>
     <string name="search_hint_albums">Search albums or artists</string>
     <string name="search_hint_songs">Search songs or album artists</string>
     <string name="search_hint_playlists">Search playlists</string>
-    <string name="cd_playlist_art">Playlist artwork</string>
+
     <string name="playlist_liked_songs_title">Liked Songs</string>
+
     <plurals name="playlist_song_count">
         <item quantity="one">%d song</item>
         <item quantity="other">%d songs</item>
     </plurals>
+
     <string name="playlist_subtitle_with_duration">%1$s • %2$s</string>
+
     <string name="cd_shuffle_off">Enable shuffle</string>
     <string name="cd_shuffle_on">Disable shuffle</string>
+
     <string name="cd_repeat_off">Repeat off</string>
     <string name="cd_repeat_all">Repeat all tracks</string>
     <string name="cd_repeat_one">Repeat current track</string>
+
     <string name="cd_restart_track">Restart current track</string>
+
     <string name="cd_seek_backward">Seek backward 10 seconds</string>
     <string name="cd_seek_forward">Seek forward 30 seconds</string>
+
     <string name="player_fab_label">Now playing</string>
+
     <string name="song_options_content_description">Song options</string>
     <string name="song_options_add_to_queue">Add to queue</string>
     <string name="song_options_play_next">Play next</string>
+
     <string name="song_favourite_button_content_description">Toggle favourite</string>
     <string name="song_favourite_button_content_description_selected">Marked as favourite</string>
     <string name="song_favourite_button_content_description_unselected">Add to favourites</string>
+
     <string name="song_favourite_add_success">%1$s added to favourites.</string>
-    <string name="song_favourite_add_failure">Couldn\'t add to favourites</string>
+    <string name="song_favourite_add_failure">Could not add to favourites</string>
     <string name="song_favourite_remove_success">%1$s removed from favourites.</string>
-    <string name="song_favourite_remove_failure">Couldn\'t remove from favourites</string>
+    <string name="song_favourite_remove_failure">Could not remove from favourites</string>
+
     <string name="queue_action_unavailable">Connect to the player to manage the queue.</string>
     <string name="queue_song_added_to_end">Song added to the end of the queue.</string>
     <string name="queue_song_added_next">Song will play next.</string>
+
     <string name="player_show_queue">Show queue</string>
     <string name="player_queue_empty">The queue is currently empty.</string>
     <string name="player_queue_drag_hint">Press and hold for 1 second, then drag to reorder songs.</string>
+
     <string name="cd_downloaded_indicator">Downloaded indicator</string>
+
     <string name="menu_download_collection">Download for offline</string>
     <string name="menu_remove_download">Remove download</string>
+
     <string name="download_started">Download started</string>
     <string name="download_removed">Download removed</string>
     <string name="download_failed">Unable to update download: %1$s</string>
+
     <string name="notification_permission_rationale">Enable notifications to control playback while the app is in the background.</string>
     <string name="notification_permission_denied">Notifications stay off. You can enable them from system settings at any time.</string>
     <string name="notification_permission_settings_action">Settings</string>
+    <string name="notification_permission_dialog_title">Enable notifications?</string>
+    <string name="notification_permission_dialog_message">Slipstream needs notification access so you can manage playback when the app is closed</string>
+    <string name="notification_permission_allow_once">Allow only this time</string>
+    <string name="notification_permission_allow_always">Always allow</string>
+    <string name="notification_permission_exit">Exit app</string>
+
+    <string name="cd_previous_song">Previous song</string>
+    <string name="cd_play_pause">Play or pause</string>
+    <string name="cd_next_song">Next song</string>
 </resources>

@@ -2,4 +2,24 @@
 <resources>
     <dimen name="logo_height">128dp</dimen>
     <dimen name="logo_width">128dp</dimen>
+    <dimen name="spacing_xsmall">4dp</dimen>
+    <dimen name="spacing_small">8dp</dimen>
+    <dimen name="spacing_medium">12dp</dimen>
+    <dimen name="spacing_large">16dp</dimen>
+    <dimen name="spacing_xlarge">24dp</dimen>
+    <dimen name="spacing_xxlarge">32dp</dimen>
+    <dimen name="homepage_content_padding">20dp</dimen>
+    <dimen name="card_corner_radius_small">8dp</dimen>
+    <dimen name="card_corner_radius_large">16dp</dimen>
+    <dimen name="card_elevation_small">4dp</dimen>
+    <dimen name="icon_size_small">20dp</dimen>
+    <dimen name="icon_size_medium">24dp</dimen>
+    <dimen name="icon_size_large">32dp</dimen>
+    <dimen name="icon_touch_target">48dp</dimen>
+    <dimen name="player_control_icon_size">48dp</dimen>
+    <dimen name="player_small_button_padding">8dp</dimen>
+    <dimen name="player_primary_control_size">64dp</dimen>
+    <dimen name="queue_item_min_height">64dp</dimen>
+    <dimen name="media_thumbnail_size">56dp</dimen>
+    <dimen name="media_list_item_height">72dp</dimen>
 </resources>

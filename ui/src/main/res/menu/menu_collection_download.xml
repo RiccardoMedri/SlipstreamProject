@@ -2,7 +2,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_toggle_download"
-        android:icon="@drawable/ic_download"
+        android:icon="@drawable/ic_delete_offline"
         android:title="@string/menu_download_collection"
         app:showAsAction="always" />
 </menu>

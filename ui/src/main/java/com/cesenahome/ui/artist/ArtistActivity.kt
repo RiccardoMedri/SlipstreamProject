@@ -7,7 +7,9 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -19,6 +21,7 @@ import com.cesenahome.domain.models.misc.SortDirection
 import com.cesenahome.ui.R
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.common.NowPlayingFabController
+import com.cesenahome.ui.common.applySystemBarsInsets
 import com.cesenahome.ui.common.setupSearchMenu
 import com.cesenahome.ui.databinding.ActivityArtistBinding
 import kotlinx.coroutines.flow.collectLatest
@@ -35,9 +38,14 @@ class ArtistActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityArtistBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        val initialFabBottomPadding = binding.nowPlayingFab.paddingBottom
+        applySystemBarsInsets(binding.root) { insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.nowPlayingFab.updatePadding(bottom = initialFabBottomPadding + systemBars.bottom)
+        }
+
         nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
 
