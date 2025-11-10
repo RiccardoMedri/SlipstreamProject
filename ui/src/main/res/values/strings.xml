@@ -104,6 +104,8 @@
     <string name="download_started">Download started</string>
     <string name="download_removed">Download removed</string>
     <string name="download_failed">Unable to update download: %1$s</string>
+    <string name="download_channel_name">Offline downloads</string>
+    <string name="download_channel_description">Offline downloads</string>
 
     <string name="notification_permission_rationale">Enable notifications to control playback while the app is in the background.</string>
     <string name="notification_permission_denied">Notifications stay off. You can enable them from system settings at any time.</string>

@@ -39,7 +39,6 @@ dependencies {
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.moshi)
     implementation(libs.moshi.kotlin)
-    implementation(libs.androidx.media3.exoplayer.workmanager)
     kapt(libs.moshi.codegen)
     implementation("androidx.room:room-ktx:2.6.1")
     implementation("androidx.room:room-runtime:2.6.1")

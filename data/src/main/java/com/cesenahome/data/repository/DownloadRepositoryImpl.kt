@@ -11,7 +11,6 @@ import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import com.cesenahome.data.download.DownloadComponents
 import com.cesenahome.data.download.DownloadMetadataStore
-import com.cesenahome.data.download.SlipstreamDownloadService
 import com.cesenahome.data.remote.media.JellyfinMediaClient
 import com.cesenahome.data.remote.toSong
 import com.cesenahome.domain.models.song.SongPagingRequest
@@ -37,6 +36,7 @@ import java.util.LinkedHashMap
 class DownloadRepositoryImpl(
     context: Context,
     private val mediaClient: JellyfinMediaClient,
+    private val downloadServiceClass: Class<out DownloadService>,
 ) : DownloadRepository {
 
     private val appContext = context.applicationContext
@@ -149,13 +149,12 @@ class DownloadRepositoryImpl(
 
                 songIds.forEach { songId ->
                     val stillReferenced =
-                        remainingAlbums.any { (_, songs) -> songId in songs } ||
-                                remainingPlaylists.any { (_, songs) -> songId in songs }
+                        remainingAlbums.any { (_, songs) -> songId in songs } || remainingPlaylists.any { (_, songs) -> songId in songs }
                     if (!stillReferenced) {
                         val requestId = requestIdForSong(songId)
                         DownloadService.sendRemoveDownload(
                             appContext,
-                            SlipstreamDownloadService::class.java,
+                            downloadServiceClass,
                             requestId,
                             /* foreground = */ false
                         )
@@ -191,7 +190,7 @@ class DownloadRepositoryImpl(
                 val song = item.toSong(mediaClient)
                 val url = mediaClient.resolveAudioUrl(song.id).getOrNull()
                 if (!url.isNullOrBlank()) {
-                    result[song.id] = DownloadSong(song.id, url)
+                    result[song.id] = DownloadSong(song.id, url.toUri())
                 }
             }
             if (items.size < pageSize) break
@@ -220,7 +219,7 @@ class DownloadRepositoryImpl(
         ///Once created, the request can be sent to the DownloadService to add the download
         DownloadService.sendAddDownload(
             appContext,
-            SlipstreamDownloadService::class.java,
+            downloadServiceClass,
             request,
             /* foreground= */ false
         )
@@ -244,7 +243,10 @@ class DownloadRepositoryImpl(
                 while (it.moveToNext()) {
                     val download = it.download
                     if (download.state == Download.STATE_COMPLETED) {
-                        parseSongId(download.request.id)?.let(completedIds::add)
+                        val songId = runCatching { songIdFromRequestId(download.request.id) }.getOrNull()
+                        if (songId != null) {
+                            completedIds.add(songId)
+                        }
                     }
                 }
             }
@@ -252,18 +254,23 @@ class DownloadRepositoryImpl(
         downloadedSongsState.update { completedIds.toSet() }
     }
 
-    private fun parseSongId(requestId: String?): String? {
-        if (requestId.isNullOrBlank()) return null
-        return requestId.removePrefix("song:").takeIf { it.isNotBlank() }
-    }
-
     //Returns the request id for the given song id
     private fun requestIdForSong(songId: String): String = "song:$songId"
 
-    private enum class CollectionType { ALBUM, PLAYLIST }
+    private fun songIdFromRequestId(requestId: String): String {
+        val prefix = "song:"
+        require(requestId.startsWith(prefix)) { "Invalid request ID format" }
+        return requestId.removePrefix(prefix)
+    }
 
     //Convert a url string to a Uri
-    private data class DownloadSong(val id: String, val url: String) {
-        val uri: Uri = url.toUri()
+    private enum class CollectionType {
+        ALBUM,
+        PLAYLIST,
     }
+
+    private data class DownloadSong(
+        val id: String,
+        val uri: Uri,
+    )
 }

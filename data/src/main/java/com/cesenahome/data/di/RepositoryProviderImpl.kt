@@ -1,28 +1,35 @@
 package com.cesenahome.data.di
 
 import android.content.Context
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.offline.DownloadService
 import com.cesenahome.data.remote.JellyfinApiClient
 import com.cesenahome.data.repository.AlbumRepositoryImpl
 import com.cesenahome.data.repository.ArtistRepositoryImpl
+import com.cesenahome.data.repository.DownloadRepositoryImpl
 import com.cesenahome.data.repository.HomepageRepositoryImpl
 import com.cesenahome.data.repository.LoginRepositoryImpl
-import com.cesenahome.domain.repository.HomepageRepository
+import com.cesenahome.data.repository.PlayerRepositoryImpl
+import com.cesenahome.data.repository.PlaylistRepositoryImpl
+import com.cesenahome.data.repository.SongRepositoryImpl
 import com.cesenahome.data.session.SessionDataStore
 import com.cesenahome.domain.di.RepositoryProvider
-import com.cesenahome.domain.repository.LoginRepository
-import com.cesenahome.domain.repository.SongRepository
-import com.cesenahome.data.repository.SongRepositoryImpl
-import com.cesenahome.domain.repository.PlayerRepository
-import com.cesenahome.data.repository.PlayerRepositoryImpl
 import com.cesenahome.domain.repository.AlbumRepository
 import com.cesenahome.domain.repository.ArtistRepository
-import com.cesenahome.data.repository.PlaylistRepositoryImpl
-import com.cesenahome.domain.repository.PlaylistRepository
-import com.cesenahome.data.repository.DownloadRepositoryImpl
 import com.cesenahome.domain.repository.DownloadRepository
+import com.cesenahome.domain.repository.HomepageRepository
+import com.cesenahome.domain.repository.LoginRepository
+import com.cesenahome.domain.repository.PlayerRepository
+import com.cesenahome.domain.repository.PlaylistRepository
+import com.cesenahome.domain.repository.SongRepository
 
-class RepositoryProviderImpl(
-    private val context: Context
+
+@UnstableApi
+class RepositoryProviderImpl
+    (
+    private val context: Context,
+    private val downloadServiceClass: Class<out DownloadService>,
 ): RepositoryProvider{
 
     val sessionStore = SessionDataStore(context)
@@ -80,6 +87,7 @@ class RepositoryProviderImpl(
         DownloadRepositoryImpl(
             context = context,
             mediaClient = mediaClient,
+            downloadServiceClass = downloadServiceClass,
         )
     }
 }

@@ -46,6 +46,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.media3.exoplayer.workmanager)
     implementation(project(path = ":domain"))
     implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
     implementation("androidx.fragment:fragment-ktx:1.8.4")

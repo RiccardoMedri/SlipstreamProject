@@ -31,6 +31,16 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name="com.cesenahome.ui.download.SlipstreamDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
+            <intent-filter>
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".player.PlayerActivity"
             android:exported="false" />
