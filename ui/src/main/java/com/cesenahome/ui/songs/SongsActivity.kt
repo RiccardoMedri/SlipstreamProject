@@ -35,7 +35,10 @@ import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
 import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
+import com.cesenahome.ui.player.PlayerServiceConfig.RANDOM_QUEUE_ATTEMPT_MULTIPLIER
+import com.cesenahome.ui.player.PlayerServiceConfig.RANDOM_QUEUE_TARGET_SIZE
 import com.cesenahome.ui.player.toMediaItem
+import com.cesenahome.ui.player.toQueueSong
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -49,6 +52,7 @@ class SongsActivity : AppCompatActivity() {
     private val mediaController: MediaController?
         get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
     private var downloadMenuItem: MenuItem? = null
+    private val getRandomSongUseCase by lazy { UseCaseProvider.getRandomSongUseCase }
     private val albumId: String? by lazy {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
@@ -400,37 +404,65 @@ class SongsActivity : AppCompatActivity() {
 
     @OptIn(UnstableApi::class)
     private fun launchPlayerActivity(song: Song) {
-        val snapshotSongs = adapter.snapshot().items
-        val queueSongs = ArrayList<QueueSong>(snapshotSongs.size)
-        snapshotSongs.forEach { snapshotSong ->
-            queueSongs += snapshotSong.toQueueSong()
-        }
-        val selectedIndex = queueSongs.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
-        val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ID, song.id)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, song.title)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, song.artist)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, song.artistId)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, song.album)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, song.albumId)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
-            if (queueSongs.isNotEmpty()) {
-                putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
-                putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, selectedIndex)
+        lifecycleScope.launch {
+            val queueSongs = ArrayList(buildQueueSongs(song))
+            val selectedIndex = queueSongs.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
+            val intent = Intent(this@SongsActivity, PlayerActivity::class.java).apply {
+                putExtra(PlayerActivityExtras.EXTRA_SONG_ID, song.id)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, song.title)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, song.artist)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, song.artistId)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, song.album)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, song.albumId)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
+                putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
+                if (queueSongs.isNotEmpty()) {
+                    putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
+                    putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, selectedIndex)
+                }
             }
+            startActivity(intent)
         }
-        startActivity(intent)
     }
 
-    private fun Song.toQueueSong(): QueueSong = QueueSong(
-        id = id,
-        title = title,
-        artist = artist,
-        artistId = artistId,
-        album = album,
-        albumId = albumId,
-        durationMs = durationMs,
-        artworkUrl = artworkUrl
-    )
+    private suspend fun buildQueueSongs(selectedSong: Song): List<QueueSong> {
+        val snapshotSongs = adapter.snapshot().items
+        val queueSongs = ArrayList<QueueSong>(snapshotSongs.size)
+        val existingIds = mutableSetOf<String>()
+        snapshotSongs.forEach { snapshotSong ->
+            queueSongs += snapshotSong.toQueueSong().also { existingIds += it.id }
+        }
+        if (existingIds.add(selectedSong.id) && queueSongs.none { it.id == selectedSong.id }) {
+            queueSongs.add(selectedSong.toQueueSong())
+        }
+
+        if (shouldAppendRandomSongs(queueSongs.size)) {
+            queueSongs += fetchRandomQueueSongs(existingIds, RANDOM_QUEUE_TARGET_SIZE - queueSongs.size)
+        }
+
+        return queueSongs
+    }
+
+    private fun shouldAppendRandomSongs(currentQueueSize: Int): Boolean {
+        val isInAllSongsView = albumId == null && playlistId == null
+        val isSearching = viewModel.searchQuery.value.isNotBlank()
+        return isInAllSongsView && isSearching && currentQueueSize < RANDOM_QUEUE_TARGET_SIZE
+    }
+
+    private suspend fun fetchRandomQueueSongs(
+        existingIds: MutableSet<String>,
+        required: Int,
+    ): List<QueueSong> {
+        if (required <= 0) return emptyList()
+        val randomSongs = ArrayList<QueueSong>(required)
+        var attempts = 0
+        val maxAttempts = required * RANDOM_QUEUE_ATTEMPT_MULTIPLIER
+        while (randomSongs.size < required && attempts < maxAttempts) {
+            attempts++
+            val song = getRandomSongUseCase().getOrNull() ?: continue
+            if (!existingIds.add(song.id)) continue
+            randomSongs += song.toQueueSong()
+        }
+        return randomSongs
+    }
 }

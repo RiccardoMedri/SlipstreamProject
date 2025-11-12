@@ -32,6 +32,17 @@ fun Song.toMediaMetadata(): MediaMetadata = MediaMetadata.Builder()
     .apply { setExtrasIfPresent(artistId, albumId) }
     .build()
 
+fun Song.toQueueSong(): QueueSong = QueueSong(
+    id = id,
+    title = title,
+    artist = artist,
+    artistId = artistId,
+    album = album,
+    albumId = albumId,
+    durationMs = durationMs,
+    artworkUrl = artworkUrl
+)
+
 fun QueueSong.toMediaItem(): MediaItem {
     val metadataBuilder = MediaMetadata.Builder()
         .setTitle(title)

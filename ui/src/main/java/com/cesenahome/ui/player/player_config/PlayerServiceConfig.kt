@@ -10,4 +10,6 @@ object PlayerServiceConfig {
     const val SHUFFLE_BUFFER_TARGET = 25
     const val SHUFFLE_HISTORY_LIMIT = 20
     const val SHUFFLE_RANDOM_ATTEMPTS = 40
+    const val RANDOM_QUEUE_TARGET_SIZE = 25
+    const val RANDOM_QUEUE_ATTEMPT_MULTIPLIER = 4
 }
