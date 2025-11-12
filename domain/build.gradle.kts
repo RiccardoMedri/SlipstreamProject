@@ -35,9 +35,6 @@ android {
 
 dependencies {
     implementation("androidx.paging:paging-runtime-ktx:3.3.6")
-    implementation("androidx.media3:media3-common:1.8.0")
-    implementation("androidx.media3:media3-exoplayer:1.8.0")
-    implementation("androidx.media3:media3-datasource:1.8.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

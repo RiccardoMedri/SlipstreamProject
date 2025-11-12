@@ -24,7 +24,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.player.PlayerDownloadDependencies
+import com.cesenahome.ui.download.DownloadDependenciesRegistry
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.ui.player.PlayerServiceConfig.CACHE_SIZE
 import com.cesenahome.ui.player.PlayerServiceConfig.CHANNEL_ID
@@ -65,9 +65,9 @@ class PlayerService : MediaLibraryService() {
 
     //Lazily instatiate Media3's offline engine: queues downloads, persists their index/state
     //in a DB, runs them on a worker thread pool, and exposes APIs to query them later
-    private val downloadProvider by lazy { PlayerDownloadDependencies.requireProvider() }
+    private val downloadProvider by lazy { DownloadDependenciesRegistry.requireInfra() }
     private val downloadManager: DownloadManager by lazy {
-        downloadProvider.getDownloadManager(applicationContext)
+        downloadProvider.downloadManager(applicationContext)
     }
 
     //For async work inside callbacks; failures don’t kill siblings
@@ -120,7 +120,7 @@ class PlayerService : MediaLibraryService() {
         //Sets shared cache behind downloads and network fallback then gives this to DefaultMediaSourceFactory
         //so any media item the player loads will hit cache first and fall back to network automatically
         val cacheDataSourceFactory = CacheDataSource.Factory()
-            .setCache(downloadProvider.getDownloadCache(this))
+            .setCache(downloadProvider.downloadCache(this))
             .setUpstreamDataSourceFactory(DefaultHttpDataSource.Factory())
 
         //Creates player and all controls

@@ -14,19 +14,19 @@ import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.scheduler.Scheduler
 import androidx.media3.exoplayer.workmanager.WorkManagerScheduler
-import com.cesenahome.domain.models.misc.DownloadServiceDependencies
 import com.cesenahome.ui.R
 
 @UnstableApi
 class SlipstreamDownloadService : DownloadService(
     FOREGROUND_NOTIFICATION_ID,
     DEFAULT_FOREGROUND_NOTIFICATION_UPDATE_INTERVAL,
-    DownloadServiceDependencies.requireProvider().notificationChannelId,
+    DownloadDependenciesRegistry.requireUi().notificationChannelId,
     R.string.download_channel_name,
     R.string.download_channel_description
 ) {
 
-    private val dependencies get() = DownloadServiceDependencies.requireProvider()
+    private val uiDependencies get() = DownloadDependenciesRegistry.requireUi()
+    private val infraDependencies get() = DownloadDependenciesRegistry.requireInfra()
 
     override fun onCreate() {
         super.onCreate()
@@ -35,7 +35,7 @@ class SlipstreamDownloadService : DownloadService(
 
     ///Returns the DownloadManager initialized in DownloadComponents
     override fun getDownloadManager(): DownloadManager {
-        return dependencies.getDownloadManager(applicationContext)
+        return infraDependencies.downloadManager(applicationContext)
     }
 
     ///Returns a Scheduler to reschedule downloads if they fail or after reboot
@@ -49,7 +49,7 @@ class SlipstreamDownloadService : DownloadService(
         downloads: MutableList<Download>,
         notMetRequirements: Int
     ): Notification {
-        val helper = dependencies.getNotificationHelper(applicationContext)
+        val helper = uiDependencies.notificationHelper(applicationContext)
         val contentIntent = createContentIntent()
         return helper.buildProgressNotification(
             this,
@@ -76,7 +76,7 @@ class SlipstreamDownloadService : DownloadService(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = ContextCompat.getSystemService(this, NotificationManager::class.java)
             val channel = NotificationChannel(
-                dependencies.notificationChannelId,
+                uiDependencies.notificationChannelId,
                 getString(R.string.download_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {

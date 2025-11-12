@@ -6,26 +6,26 @@ import androidx.media3.datasource.cache.Cache
 import androidx.media3.exoplayer.offline.DownloadManager
 import androidx.media3.exoplayer.offline.DownloadNotificationHelper
 import com.cesenahome.data.download.DownloadComponents
-import com.cesenahome.domain.models.misc.DownloadServiceDependencies
-import com.cesenahome.domain.player.PlayerDownloadDependencies
+import com.cesenahome.ui.download.DownloadInfra
+import com.cesenahome.ui.download.DownloadUi
 
 @UnstableApi
 class AppDownloadProvider :
-    PlayerDownloadDependencies.Provider,
-    DownloadServiceDependencies.Provider {
+    DownloadInfra,
+    DownloadUi {
 
     override val notificationChannelId: String
         get() = DownloadComponents.NOTIFICATION_CHANNEL_ID
 
-    override fun getDownloadManager(context: Context): DownloadManager {
+    override fun downloadManager(context: Context): DownloadManager {
         return DownloadComponents.getDownloadManager(context)
     }
 
-    override fun getDownloadCache(context: Context): Cache {
+    override fun downloadCache(context: Context): Cache {
         return DownloadComponents.getDownloadCache(context)
     }
 
-    override fun getNotificationHelper(context: Context): DownloadNotificationHelper {
+    override fun notificationHelper(context: Context): DownloadNotificationHelper {
         return DownloadComponents.getNotificationHelper(context)
     }
 }
