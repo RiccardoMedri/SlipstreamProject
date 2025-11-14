@@ -3,12 +3,13 @@ package com.cesenahome.ui.playlist
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup.MarginLayoutParams
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import androidx.core.view.updatePadding
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -47,10 +48,12 @@ class PlaylistActivity : AppCompatActivity() {
         binding = ActivityPlaylistsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val initialFabBottomPadding = binding.nowPlayingFab.paddingBottom
+        val initialFabBottomMargin = (binding.nowPlayingFab.layoutParams as MarginLayoutParams).bottomMargin
         applySystemBarsInsets(binding.root) { insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.nowPlayingFab.updatePadding(bottom = initialFabBottomPadding + systemBars.bottom)
+            binding.nowPlayingFab.updateLayoutParams<MarginLayoutParams> {
+                bottomMargin = initialFabBottomMargin + systemBars.bottom
+            }
         }
 
         nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)

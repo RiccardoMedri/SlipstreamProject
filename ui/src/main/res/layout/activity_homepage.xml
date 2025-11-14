@@ -82,14 +82,15 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.5" />
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/nowPlayingFab"
+        style="@style/Widget.Slipstream.NowPlayingFab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/spacing_large"
-        android:text="@string/player_fab_label"
+        android:contentDescription="@string/player_fab_label"
         android:visibility="gone"
-        app:icon="@drawable/ic_music_note"
+        app:srcCompat="@drawable/ic_now_playing_trickster"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

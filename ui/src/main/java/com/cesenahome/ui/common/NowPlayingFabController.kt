@@ -21,14 +21,14 @@ import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ALBUM_ID
 import com.cesenahome.ui.player.MEDIA_METADATA_KEY_ARTIST_ID
 import com.cesenahome.ui.player.buildQueueSongs
 import com.cesenahome.ui.player.player_config.PlayerActivityExtras
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 
 @OptIn(UnstableApi::class)
 class NowPlayingFabController(
     private val activity: AppCompatActivity,
-    private val fab: ExtendedFloatingActionButton
+    private val fab: FloatingActionButton
 ) : DefaultLifecycleObserver {
 
     private var mediaControllerFuture: ListenableFuture<MediaController>? = null
@@ -59,6 +59,7 @@ class NowPlayingFabController(
 
     init {
         fab.hide()
+        fab.setImageResource(R.drawable.ic_now_playing_trickster)
         fab.setOnClickListener { openPlayer() }
         activity.lifecycle.addObserver(this)
     }
@@ -88,10 +89,11 @@ class NowPlayingFabController(
     private fun updateFabState() {
         fab.post {
             val controller = mediaController
-            if (controller?.currentMediaItem != null) {
+            val hasItem = controller?.currentMediaItem != null
+            if (hasItem) {
                 val label = activity.getString(R.string.player_fab_label)
-                fab.text = label
                 fab.contentDescription = label
+                fab.setImageResource(R.drawable.ic_now_playing_trickster)
                 fab.show()
             } else {
                 fab.hide()

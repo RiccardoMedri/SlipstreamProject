@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style
+        name="Widget.Slipstream.NowPlayingFab"
+        parent="@style/Widget.Material3.FloatingActionButton.Primary">
+        <item name="useCompatPadding">false</item>
+        <item name="tint">?attr/colorOnPrimary</item>
+    </style>
+</resources>

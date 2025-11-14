@@ -73,7 +73,7 @@
     <string name="cd_seek_backward">Seek backward 10 seconds</string>
     <string name="cd_seek_forward">Seek forward 30 seconds</string>
 
-    <string name="player_fab_label">Now playing</string>
+    <string name="player_fab_label">Now Playing</string>
 
     <string name="song_options_content_description">Song options</string>
     <string name="song_options_add_to_queue">Add to queue</string>
