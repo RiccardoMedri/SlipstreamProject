@@ -19,6 +19,10 @@
     <string name="title_playlists">Playlists</string>
 
     <string name="homepage_title">Your Library</string>
+    <string name="homepage_artists_subtitle">See every artist in your collection</string>
+    <string name="homepage_albums_subtitle">Rediscover albums at a glance</string>
+    <string name="homepage_playlists_subtitle">Jump into curated playlists</string>
+    <string name="homepage_songs_subtitle">View all of your saved tracks</string>
     <string name="empty_state_no_songs">No songs found</string>
 
     <string name="sort_field_default">Sort: Name</string>

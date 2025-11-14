@@ -8,9 +8,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.cesenahome.domain.di.UseCaseProvider
+import com.cesenahome.domain.models.homepage.HomeDestination
+import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.databinding.ActivityHomepageBinding
-import com.cesenahome.domain.models.homepage.HomeDestination
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.artist.ArtistActivity
 import com.cesenahome.ui.songs.SongsActivity
@@ -54,14 +55,10 @@ class HomepageActivity : AppCompatActivity() {
                     viewModel.menu.collect { items ->
                         items.forEach { item ->
                             when (item.destination) {
-                                HomeDestination.ARTISTS ->
-                                    binding.btnArtists.text = labelWithCount("Artists", item.count)
-                                HomeDestination.ALBUMS ->
-                                    binding.btnAlbums.text = labelWithCount("Albums", item.count)
-                                HomeDestination.PLAYLISTS ->
-                                    binding.btnPlaylists.text = labelWithCount("Playlists", item.count)
-                                HomeDestination.SONGS ->
-                                    binding.btnSongs.text = labelWithCount("Songs", item.count)
+                                HomeDestination.ARTISTS -> binding.btnArtistsTitle.text = labelWithCount(getString(R.string.title_artists), item.count)
+                                HomeDestination.ALBUMS -> binding.btnAlbumsTitle.text = labelWithCount(getString(R.string.title_albums), item.count)
+                                HomeDestination.PLAYLISTS -> binding.btnPlaylistsTitle.text = labelWithCount(getString(R.string.title_playlists), item.count)
+                                HomeDestination.SONGS -> binding.btnSongsTitle.text = labelWithCount(getString(R.string.title_songs), item.count)
                             }
                         }
                     }
