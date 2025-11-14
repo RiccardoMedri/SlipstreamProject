@@ -4,7 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
+    android:layout_marginHorizontal="@dimen/spacing_small"
+    android:layout_marginVertical="@dimen/spacing_xsmall"
+    android:background="@drawable/bg_list_item"
+    android:foreground="?attr/selectableItemBackground"
     android:minHeight="@dimen/queue_item_min_height"
     android:padding="@dimen/spacing_medium">
 
@@ -40,6 +43,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/spacing_medium"
         android:layout_marginTop="@dimen/spacing_xsmall"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:ellipsize="end"
         android:maxLines="1"
         app:layout_constraintBottom_toBottomOf="parent"

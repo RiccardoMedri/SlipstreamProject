@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="@dimen/spacing_small"
-    app:cardCornerRadius="@dimen/card_corner_radius_small"
+    android:foreground="?attr/selectableItemBackground"
     app:cardElevation="@dimen/card_elevation_small">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -56,6 +56,7 @@
             android:layout_marginStart="@dimen/spacing_small"
             android:layout_marginEnd="@dimen/spacing_small"
             android:layout_marginBottom="@dimen/spacing_small"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             app:layout_constraintTop_toBottomOf="@id/album_title"
             app:layout_constraintStart_toStartOf="parent"
@@ -64,4 +65,4 @@
             tools:text="Artist Name" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

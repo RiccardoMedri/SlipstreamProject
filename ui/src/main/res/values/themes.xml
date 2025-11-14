@@ -1,8 +1,66 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.Slipstream" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <style name="Base.Theme.Slipstream" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/soft_yellow</item>
+        <item name="colorOnPrimary">@color/deep_charcoal</item>
+        <item name="colorPrimaryContainer">@color/soft_yellow_variant</item>
+        <item name="colorOnPrimaryContainer">@color/deep_charcoal</item>
+
+        <item name="colorSecondary">@color/soft_yellow_muted</item>
+        <item name="colorOnSecondary">@color/deep_charcoal</item>
+        <item name="colorSecondaryContainer">@color/charcoal_surface_elevated</item>
+        <item name="colorOnSecondaryContainer">@color/soft_yellow</item>
+
+        <item name="colorBackground">@color/deep_charcoal</item>
+        <item name="colorOnBackground">@color/soft_yellow</item>
+        <item name="colorSurface">@color/charcoal_surface</item>
+        <item name="colorOnSurface">@color/soft_yellow</item>
+        <item name="colorSurfaceVariant">@color/charcoal_surface_elevated</item>
+        <item name="colorOnSurfaceVariant">@color/soft_yellow_muted</item>
+        <item name="colorOutline">@color/outline_soft</item>
+
+        <item name="android:colorBackground">@color/deep_charcoal</item>
+        <item name="android:windowBackground">@color/deep_charcoal</item>
+        <item name="android:statusBarColor">@color/deep_charcoal</item>
+        <item name="android:navigationBarColor">@color/deep_charcoal</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <item name="colorControlNormal">@color/soft_yellow</item>
+        <item name="colorControlHighlight">@color/soft_yellow_variant</item>
+        <item name="colorControlActivated">@color/soft_yellow</item>
+        <item name="android:textColorPrimary">@color/soft_yellow</item>
+        <item name="android:textColorSecondary">@color/soft_yellow_muted</item>
+        <item name="android:textColorHint">@color/soft_yellow_muted</item>
+
+        <item name="materialButtonOutlinedStyle">@style/Widget.Slipstream.OutlinedButton</item>
+        <item name="materialCardViewStyle">@style/Widget.Slipstream.Card</item>
+
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Slipstream.Medium</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Slipstream.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Slipstream.Large</item>
+    </style>
+
+    <style name="Widget.Slipstream.OutlinedButton" parent="@style/Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/soft_yellow</item>
+        <item name="strokeColor">@color/soft_yellow</item>
+        <item name="iconTint">@color/soft_yellow</item>
+        <item name="android:backgroundTint">@color/charcoal_surface_elevated</item>
+        <item name="backgroundTint">@color/charcoal_surface_elevated</item>
+        <item name="rippleColor">@color/soft_yellow_muted</item>
+    </style>
+
+    <style name="Widget.Slipstream.Card" parent="@style/Widget.Material3.CardView">
+        <item name="cardBackgroundColor">@color/charcoal_surface_elevated</item>
+        <item name="strokeColor">@color:outline_soft</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Slipstream.Medium" parent="@style/ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">@dimen/card_corner_radius_large</item>
+    </style>
+
+    <style name="ShapeAppearance.Slipstream.Large" parent="@style/ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">@dimen/card_corner_radius_large</item>
     </style>
 
     <style name="Theme.Slipstream" parent="Base.Theme.Slipstream" />
