@@ -4,51 +4,88 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     android:padding="@dimen/spacing_large"
     tools:context=".login.LoginActivity">
 
-    <EditText
-        android:id="@+id/etServerUrl"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutServerUrl"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xxlarge"
-        android:hint="@string/server_url_hint"
-        android:inputType="textUri"
-        app:layout_constraintTop_toTopOf="parent"
+        app:boxBackgroundColor="@color/charcoal_surface_elevated"
+        app:boxStrokeColor="@color/soft_yellow"
+        app:hintTextColor="@color/soft_yellow_muted"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <EditText
-        android:id="@+id/etUsername"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etServerUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/soft_yellow"
+            android:textColorHint="@color/soft_yellow_muted"
+            android:hint="@string/server_url_hint"
+            android:inputType="textUri" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutUsername"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_large"
-        android:hint="@string/username_hint"
-        android:inputType="text"
-        app:layout_constraintTop_toBottomOf="@+id/etServerUrl"
+        app:boxBackgroundColor="@color/charcoal_surface_elevated"
+        app:boxStrokeColor="@color/soft_yellow"
+        app:hintTextColor="@color/soft_yellow_muted"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/layoutServerUrl">
 
-    <EditText
-        android:id="@+id/etPassword"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etUsername"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/soft_yellow"
+            android:textColorHint="@color/soft_yellow_muted"
+            android:hint="@string/username_hint"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutPassword"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_large"
-        android:hint="@string/password_hint"
-        android:inputType="textPassword"
-        app:layout_constraintTop_toBottomOf="@+id/etUsername"
+        app:boxBackgroundColor="@color/charcoal_surface_elevated"
+        app:boxStrokeColor="@color/soft_yellow"
+        app:hintTextColor="@color/soft_yellow_muted"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/layoutUsername">
 
-    <Button
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/soft_yellow"
+            android:textColorHint="@color/soft_yellow_muted"
+            android:hint="@string/password_hint"
+            android:inputType="textPassword" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLogin"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xlarge"
         android:text="@string/login_button_text"
-        app:layout_constraintTop_toBottomOf="@+id/etPassword"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/layoutPassword" />
 
     <TextView
         android:id="@+id/tvStatus"
@@ -56,6 +93,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_xlarge"
         android:gravity="center"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@+id/btnLogin"
         app:layout_constraintStart_toStartOf="parent"

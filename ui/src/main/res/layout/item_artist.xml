@@ -3,9 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/spacing_medium"
+    android:layout_marginVertical="@dimen/spacing_small"
+    android:background="@drawable/bg_list_item"
+    android:clipToOutline="true"
+    android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="@dimen/spacing_large"
-    android:gravity="center_vertical">
+    android:outlineProvider="background"
+    android:paddingHorizontal="@dimen/spacing_large"
+    android:paddingVertical="@dimen/spacing_small">
 
     <ImageView
         android:id="@+id/artist_artwork"
@@ -20,6 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/spacing_large"
         android:layout_weight="1"
+        android:textColor="?attr/colorOnSurface"
         android:textAppearance="?attr/textAppearanceListItem"
         tools:text="Artist Name" />
 

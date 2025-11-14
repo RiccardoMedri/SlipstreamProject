@@ -2,5 +2,16 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="bg_color">#FF8A3D</color>
+    <color name="deep_charcoal">#FF111416</color>
+    <color name="charcoal_surface">#FF1B1F21</color>
+    <color name="charcoal_surface_elevated">#FF23282A</color>
+    <color name="outline_soft">#FF2E3335</color>
+
+    <color name="soft_yellow">#FFF5C242</color>
+    <color name="soft_yellow_variant">#FFE6B83A</color>
+    <color name="soft_yellow_muted">#FFB8912A</color>
+
+    <color name="bg_color">@color/deep_charcoal</color>
+    <color name="list_item_surface">#FF1E2224</color>
+    <color name="list_item_ripple">#59F5C242</color>
 </resources>
