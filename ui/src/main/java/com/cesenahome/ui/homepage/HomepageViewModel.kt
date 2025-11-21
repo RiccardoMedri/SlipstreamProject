@@ -21,9 +21,8 @@ class HomepageViewModel(
 ) : ViewModel() {
 
     private val _menu = MutableStateFlow<List<HomeMenuItem>>(emptyList())
-    val menu: StateFlow<List<HomeMenuItem>> = _menu
-
     private val _isLoadingCounts = MutableStateFlow(false)
+    val menu: StateFlow<List<HomeMenuItem>> = _menu
     val isLoadingCounts: StateFlow<Boolean> = _isLoadingCounts
 
     init {
@@ -38,7 +37,6 @@ class HomepageViewModel(
                 )
             }
         }
-        // optional counts fetch
         viewModelScope.launch {
             _isLoadingCounts.value = true
             getLibraryCountsUseCase().onSuccess { counts ->

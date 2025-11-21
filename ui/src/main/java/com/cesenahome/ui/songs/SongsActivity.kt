@@ -44,6 +44,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+@OptIn(UnstableApi::class)
 class SongsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySongsBinding
@@ -174,6 +175,12 @@ class SongsActivity : AppCompatActivity() {
                 launch {
                     viewModel.pagedSongs.collectLatest { pagingData: PagingData<Song> ->
                         adapter.submitData(pagingData)
+                        adapter.submitData(lifecycle, pagingData)
+                    }
+                }
+                launch {
+                    viewModel.searchQuery.collect {
+                        binding.recyclerSongs.scrollToPosition(0)
                     }
                 }
                 launch {
@@ -300,6 +307,7 @@ class SongsActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun showSortFieldMenu(anchor: View) {
         val popup = PopupMenu(this, anchor)
         popup.menuInflater.inflate(R.menu.menu_song_sort_field, popup.menu)
@@ -318,7 +326,7 @@ class SongsActivity : AppCompatActivity() {
             selected?.let { field ->
                 if (field != viewModel.sortState.value.field) {
                     viewModel.onSortFieldSelected(field)
-                    adapter.refresh()
+                    //adapter.refresh()
                 }
             }
             true
@@ -342,7 +350,7 @@ class SongsActivity : AppCompatActivity() {
             selected?.let { direction ->
                 if (direction != viewModel.sortState.value.direction) {
                     viewModel.onSortDirectionSelected(direction)
-                    adapter.refresh()
+                    //adapter.refresh()
                 }
             }
             true
@@ -405,7 +413,6 @@ class SongsActivity : AppCompatActivity() {
         Toast.makeText(this, R.string.queue_song_added_next, Toast.LENGTH_SHORT).show()
     }
 
-    @OptIn(UnstableApi::class)
     private fun launchPlayerActivity(song: Song) {
         lifecycleScope.launch {
             val queueSongs = ArrayList(buildQueueSongs(song))

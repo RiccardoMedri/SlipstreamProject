@@ -105,7 +105,6 @@ class NowPlayingFabController(
         val controller = mediaController ?: return
         val currentItem = controller.currentMediaItem ?: return
 
-        // Build queue from the shared mapper and make the type explicit (avoid isNotEmpty() ambiguity)
         val queueSongs: ArrayList<QueueSong> = ArrayList(controller.buildQueueSongs())
 
         val durationMs = controller.duration.takeIf { it > 0 } ?: 0L

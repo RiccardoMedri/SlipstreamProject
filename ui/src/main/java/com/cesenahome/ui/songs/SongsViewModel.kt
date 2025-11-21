@@ -45,13 +45,17 @@ class SongsViewModel(
     private val searchQueryState = MutableStateFlow("")
     val sortState: StateFlow<SongSortOption> = sortOptionState.asStateFlow()
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
-
     private val favouriteOverrides = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-
     private val downloadedSongIds = observeDownloadedSongIdsUseCase()
     private val downloadedAlbumIds = observeDownloadedAlbumIdsUseCase()
     private val downloadedPlaylistIds = observeDownloadedPlaylistIdsUseCase()
     private val downloadOperationInProgress = MutableStateFlow(false)
+    private val _playCommands = MutableSharedFlow<PlayCommand>(extraBufferCapacity = 1)
+    val playCommands: SharedFlow<PlayCommand> = _playCommands
+    private val _favouriteEvents = MutableSharedFlow<FavouriteEvent>(extraBufferCapacity = 1)
+    val favouriteEvents: SharedFlow<FavouriteEvent> = _favouriteEvents
+    private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 1)
+    val downloadEvents: SharedFlow<DownloadEvent> = _downloadEvents
 
     private val basePagedSongs: Flow<PagingData<Song>> = combine(sortOptionState, searchQueryState) { sortOption, query ->
         sortOption to query
@@ -71,6 +75,7 @@ class SongsViewModel(
             )
         }
         .cachedIn(viewModelScope)
+
     val pagedSongs: Flow<PagingData<Song>> = combine(
         basePagedSongs,
         favouriteOverrides,
@@ -92,16 +97,10 @@ class SongsViewModel(
         data class PlaySong(val song: Song) : PlayCommand
     }
 
-    private val _playCommands = MutableSharedFlow<PlayCommand>(extraBufferCapacity = 1)
-    val playCommands: SharedFlow<PlayCommand> = _playCommands
-
     sealed interface FavouriteEvent {
         data class Success(val song: Song, val isFavourite: Boolean) : FavouriteEvent
         data class Failure(val song: Song, val isFavourite: Boolean, val reason: String?) : FavouriteEvent
     }
-
-    private val _favouriteEvents = MutableSharedFlow<FavouriteEvent>(extraBufferCapacity = 1)
-    val favouriteEvents: SharedFlow<FavouriteEvent> = _favouriteEvents
 
     data class CollectionDownloadState(val isDownloaded: Boolean, val inProgress: Boolean)
 
@@ -109,9 +108,6 @@ class SongsViewModel(
         data class Success(val downloaded: Boolean) : DownloadEvent
         data class Failure(val reason: String?) : DownloadEvent
     }
-
-    private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 1)
-    val downloadEvents: SharedFlow<DownloadEvent> = _downloadEvents
 
     val collectionDownloadState: StateFlow<CollectionDownloadState?> = combine(
         downloadedAlbumIds,
@@ -142,6 +138,7 @@ class SongsViewModel(
             if (current.direction == direction) current else current.copy(direction = direction)
         }
     }
+
     fun onSearchQueryChanged(query: String) {
         if (albumId != null || playlistId != null) return
         searchQueryState.update { current ->
@@ -149,6 +146,7 @@ class SongsViewModel(
             if (current == newQuery) current else newQuery
         }
     }
+
     fun onFavouriteClick(song: Song) {
         val overridesSnapshot = favouriteOverrides.value
         val hadOverride = overridesSnapshot.containsKey(song.id)
@@ -191,6 +189,7 @@ class SongsViewModel(
             )
         }
     }
+
     fun onToggleDownloadRequested() {
         if (downloadOperationInProgress.value) return
         val state = collectionDownloadState.value ?: return

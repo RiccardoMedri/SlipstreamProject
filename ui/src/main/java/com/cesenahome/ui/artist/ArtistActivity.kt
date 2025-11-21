@@ -40,12 +40,14 @@ class ArtistActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityArtistBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         val initialFabBottomMargin = (binding.nowPlayingFab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
         applySystemBarsInsets(binding.root) { insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             binding.nowPlayingFab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = initialFabBottomMargin + systemBars.bottom
-            }        }
+            }
+        }
 
         nowPlayingFabController = NowPlayingFabController(this, binding.nowPlayingFab)
 
@@ -77,6 +79,7 @@ class ArtistActivity : AppCompatActivity() {
         artistsAdapter = ArtistsAdapter { artist ->
             val intent = Intent(this, AlbumActivity::class.java).apply {
                 putExtra(AlbumActivity.EXTRA_ARTIST_ID, artist.id)
+                putExtra(AlbumActivity.EXTRA_ARTIST_NAME, artist.name)
             }
             startActivity(intent)
         }

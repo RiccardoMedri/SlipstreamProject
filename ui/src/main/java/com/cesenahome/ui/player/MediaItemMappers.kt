@@ -1,9 +1,12 @@
 package com.cesenahome.ui.player
 
 import android.os.Bundle
+import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.offline.Download
 import androidx.media3.session.MediaController
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.domain.models.song.Song
@@ -112,4 +115,13 @@ private fun MediaMetadata.Builder.setExtrasIfPresent(artistId: String?, albumId:
     if (!extras.isEmpty) {
         setExtras(extras)
     }
+}
+
+//Copies request properties onto the builder
+@OptIn(UnstableApi::class)
+fun MediaItem.Builder.applyDownloadRequest(download: Download) {
+    val request = download.request
+    request.uri.let { setUri(it) }
+    request.mimeType?.let { setMimeType(it) }
+    request.customCacheKey?.let { setCustomCacheKey(it) }
 }

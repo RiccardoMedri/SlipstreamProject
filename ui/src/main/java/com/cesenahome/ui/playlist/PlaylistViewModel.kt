@@ -34,6 +34,9 @@ class PlaylistViewModel(
     val sortOption: StateFlow<PlaylistSortOption> = sortState.asStateFlow()
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
+    private val _commands = MutableSharedFlow<Command>(extraBufferCapacity = 1)
+    val commands: SharedFlow<Command> = _commands
+
     private val downloadedPlaylistIds = observeDownloadedPlaylistIdsUseCase()
 
     private val basePagedPlaylists: Flow<PagingData<Playlist>> = combine(sortState, searchQueryState) { sort, query ->
@@ -63,9 +66,6 @@ class PlaylistViewModel(
     sealed interface Command {
         data class OpenPlaylist(val playlist: Playlist) : Command
     }
-
-    private val _commands = MutableSharedFlow<Command>(extraBufferCapacity = 1)
-    val commands: SharedFlow<Command> = _commands
 
     fun onPlaylistClicked(playlist: Playlist) {
         viewModelScope.launch {

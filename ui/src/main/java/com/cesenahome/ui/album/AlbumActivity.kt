@@ -35,6 +35,9 @@ class AlbumActivity : AppCompatActivity() {
     private val artistId: String? by lazy {
         intent.getStringExtra(EXTRA_ARTIST_ID)
     }
+    private val artistName: String? by lazy {
+        intent.getStringExtra(EXTRA_ARTIST_NAME)
+    }
     private val viewModel: AlbumViewModel by lazy {
         AlbumViewModel(
             UseCaseProvider.getPagedAlbumUseCase,
@@ -44,6 +47,7 @@ class AlbumActivity : AppCompatActivity() {
     }
     companion object {
         const val EXTRA_ARTIST_ID = "extra_artist_id"
+        const val EXTRA_ARTIST_NAME = "extra_artist_name"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +75,7 @@ class AlbumActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
+        artistName?.takeIf { it.isNotBlank() }?.let { binding.toolbar.title = it }
         if (artistId == null) {
             binding.toolbar.setupSearchMenu(
                 queryHint = getString(R.string.search_hint_albums),

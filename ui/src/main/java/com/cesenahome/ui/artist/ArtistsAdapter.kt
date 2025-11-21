@@ -36,7 +36,7 @@ class ArtistsAdapter(
             holder.binding.artistName.text = it.name
             Glide.with(holder.binding.artistArtwork)
                 .load(it.artworkUrl)
-                .circleCrop() // Making it circular for a different style
+                .circleCrop()
                 .into(holder.binding.artistArtwork)
 
             holder.itemView.setOnClickListener { _ ->

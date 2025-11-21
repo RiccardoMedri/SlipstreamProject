@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -187,7 +188,11 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaMetadata(metadata)
             .build()
 
-        val queueSongs = intent.getParcelableArrayListExtra<QueueSong>(PlayerActivityExtras.EXTRA_QUEUE_SONGS)
+        val queueSongs = IntentCompat.getParcelableArrayListExtra(
+            intent,
+            PlayerActivityExtras.EXTRA_QUEUE_SONGS,
+            QueueSong::class.java
+        )
         if (!queueSongs.isNullOrEmpty()) {
             val mediaItems = queueSongs.map { it.toMediaItem() }
             val startIndex = queueSongs.indexOfFirst { it.id == songId }
@@ -461,8 +466,12 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun openArtistPage() {
         val artistId = currentArtistId ?: return
+        val artistName = binding.artistTextView.text?.toString()
         val intent = Intent(this, AlbumActivity::class.java).apply {
             putExtra(AlbumActivity.EXTRA_ARTIST_ID, artistId)
+            if (!artistName.isNullOrBlank()) {
+                putExtra(AlbumActivity.EXTRA_ARTIST_NAME, artistName)
+            }
         }
         startActivity(intent)
     }
@@ -488,6 +497,7 @@ class PlayerActivity : AppCompatActivity() {
         binding.queueRecycler.layoutManager = layoutManager
         binding.queueRecycler.adapter = adapter
 
+        //Scroll queue so the current song is visible at the top
         val currentMediaId = controller.currentMediaItem?.mediaId
         if (currentMediaId != null) {
             val currentIndex = initialSongs.indexOfFirst { it.id == currentMediaId }
@@ -498,6 +508,8 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
 
+        //Enable drag in UP/DOWN directions, no swipe actions
+        //dragFrom / dragTo hold indices of the current drag
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN,
             0
@@ -507,6 +519,8 @@ class PlayerActivity : AppCompatActivity() {
 
             override fun isLongPressDragEnabled(): Boolean = false
 
+            //Track original and target positions
+            //Tell QueueAdapter to update its list so rows visually move
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
@@ -523,6 +537,9 @@ class PlayerActivity : AppCompatActivity() {
                 return true
             }
 
+            //Called when drag ends
+            //If a valid move occurred it calls moveMediaItem to reorder the real playback queue
+            //Refresh queue dialog (updateQueueDialog()) and reset drag indices
             override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
                 super.clearView(recyclerView, viewHolder)
                 if (dragFrom != RecyclerView.NO_POSITION && dragTo != RecyclerView.NO_POSITION && dragFrom != dragTo) {
@@ -538,10 +555,14 @@ class PlayerActivity : AppCompatActivity() {
             }
         })
 
+        //Attach ItemTouchHelper to the recycler
+        //setDragStarter sets a callback that when invoked triggers startDrag
         queueDragHelper = itemTouchHelper
         itemTouchHelper.attachToRecyclerView(binding.queueRecycler)
         adapter.setDragStarter { viewHolder -> queueDragHelper?.startDrag(viewHolder) }
 
+        //Keep references so updateQueueDialog() can later refresh contents
+        //Clear them when dialog is dismissed
         queueDialog = dialog
         queueDialogBinding = binding
         queueAdapter = adapter
@@ -557,6 +578,8 @@ class PlayerActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    //Rebuilds queue from the controller
+    //Tells QueueAdapter to update its list + current item
     private fun updateQueueDialog() {
         val binding = queueDialogBinding ?: return
         val adapter = queueAdapter ?: return

@@ -25,6 +25,7 @@ class AlbumViewModel(
     observeDownloadedAlbumIdsUseCase: ObserveDownloadedAlbumIdsUseCase,
     private val artistId: String? = null
 ): ViewModel() {
+
     private val defaultSort = if (artistId == null) {
         AlbumSortOption()
     } else {
@@ -32,8 +33,11 @@ class AlbumViewModel(
     }
 
     private val sortOptionState = MutableStateFlow(defaultSort)
+
     private val searchQueryState = MutableStateFlow("")
+
     val sortState: StateFlow<AlbumSortOption> = sortOptionState.asStateFlow()
+
     val searchQuery: StateFlow<String> = searchQueryState.asStateFlow()
 
     private val downloadedAlbumIds = observeDownloadedAlbumIdsUseCase()

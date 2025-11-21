@@ -45,10 +45,8 @@ class SplashActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         if (shouldRequestNotificationPermission()) {
-            // Two choices only: allow (system prompt) or deny (system prompt)
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            // Already granted or not needed on this Android version
             attemptSessionRestore()
         }
     }
@@ -60,7 +58,6 @@ class SplashActivity : AppCompatActivity() {
 
     private fun handleNotificationPermissionDenied() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            // Not applicable below 33; just proceed
             attemptSessionRestore()
             return
         }

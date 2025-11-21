@@ -23,15 +23,12 @@ class LoginViewModel(
     val loginScreenState: StateFlow<LoginScreenState> = _loginScreenState.asStateFlow()
 
     init {
-        // Observe current user status
         viewModelScope.launch {
             getCurrentUserUseCase().collect { currentUser ->
                 _loginScreenState.update {
                     it.copy(
                         user = currentUser,
-                        // If user becomes non-null, it implies a successful login/restore
                         isLoading = false,
-                        // Clear error if user is now logged in, or if it was a generic non-auth error
                         error = if (currentUser != null) null else it.error
                     )
                 }
@@ -60,7 +57,6 @@ class LoginViewModel(
                 password = _loginScreenState.value.password
             )) {
                 is LoginResult.Success -> {
-                    // reflect success immediately in UI
                     _loginScreenState.update {
                         it.copy(isLoading = false, user = result.user, error = null)
                     }
@@ -75,7 +71,6 @@ class LoginViewModel(
     fun logout() {
         viewModelScope.launch {
             logoutUseCase()
-            // User flow will update state to null. Clear input fields.
             _loginScreenState.update {
                 it.copy(serverUrl = "", username = "", password = "", error = null)
             }

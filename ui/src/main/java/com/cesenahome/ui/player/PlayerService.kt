@@ -155,7 +155,7 @@ class PlayerService : MediaLibraryService() {
             .build()
     }
 
-    //Returns my session. Needed by controllers
+    //Returns session. Needed by controllers
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
 
     //If playback isn’t really active it stops it. Otherwise just pause.
@@ -310,14 +310,6 @@ class PlayerService : MediaLibraryService() {
             }
         }
         return download?.takeIf { it.state == Download.STATE_COMPLETED }
-    }
-
-    //Copies request properties onto the builder
-    private fun MediaItem.Builder.applyDownloadRequest(download: Download) {
-        val request = download.request
-        request.uri.let { setUri(it) }
-        request.mimeType?.let { setMimeType(it) }
-        request.customCacheKey?.let { setCustomCacheKey(it) }
     }
 
     private fun requestIdForSong(mediaId: String): String = "song:$mediaId"

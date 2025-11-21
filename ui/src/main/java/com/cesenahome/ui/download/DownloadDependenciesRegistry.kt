@@ -1,8 +1,5 @@
 package com.cesenahome.ui.download
 
-/**
- * Simple registry used by the application to expose download dependencies to the UI module.
- */
 object DownloadDependenciesRegistry {
 
     @Volatile

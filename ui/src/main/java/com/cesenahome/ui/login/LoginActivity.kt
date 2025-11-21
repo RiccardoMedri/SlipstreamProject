@@ -72,7 +72,6 @@ class LoginActivity : AppCompatActivity() {
                     val user = state.user
                     if (user != null) {
                         binding.tvStatus.text = "WELCOME ${user.name ?: "User"}!"
-                        // TODO: Navigate to the main part of your app
                         Handler(Looper.getMainLooper()).postDelayed({
                             val intent = Intent(this@LoginActivity, HomepageActivity::class.java)
                             startActivity(intent)
