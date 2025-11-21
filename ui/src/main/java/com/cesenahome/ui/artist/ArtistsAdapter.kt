@@ -6,6 +6,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cesenahome.domain.models.artist.Artist
 import com.cesenahome.ui.databinding.ItemArtistBinding
 
@@ -37,6 +38,8 @@ class ArtistsAdapter(
             Glide.with(holder.binding.artistArtwork)
                 .load(it.artworkUrl)
                 .circleCrop()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
                 .into(holder.binding.artistArtwork)
 
             holder.itemView.setOnClickListener { _ ->

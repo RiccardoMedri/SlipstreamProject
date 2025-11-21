@@ -7,6 +7,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cesenahome.domain.models.album.Album
 import com.cesenahome.ui.databinding.ItemAlbumBinding
 
@@ -38,6 +39,8 @@ class AlbumsAdapter(
             holder.binding.albumArtist.text = it.artist ?: "Unknown Artist"
             Glide.with(holder.binding.albumArtwork)
                 .load(it.artworkUrl)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
                 .into(holder.binding.albumArtwork)
 
             holder.binding.downloadIndicator.isVisible = it.isDownloaded

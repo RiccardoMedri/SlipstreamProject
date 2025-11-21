@@ -67,7 +67,6 @@
 
     <ImageButton
         android:id="@+id/favouriteButton"
-        style="?attr/borderlessButtonStyle"
         android:layout_width="@dimen/icon_size_large"
         android:layout_height="@dimen/icon_size_large"
         android:background="@android:color/transparent"
@@ -77,11 +76,10 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/optionsButton"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/colorControlNormal" />
+        app:tint="@color/soft_yellow" />
 
     <ImageButton
         android:id="@+id/optionsButton"
-        style="?attr/borderlessButtonStyle"
         android:layout_width="@dimen/icon_size_large"
         android:layout_height="@dimen/icon_size_large"
         android:background="@android:color/transparent"
@@ -91,5 +89,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="?attr/colorControlNormal" />
+        app:tint="@color/soft_yellow" />
 </androidx.constraintlayout.widget.ConstraintLayout>

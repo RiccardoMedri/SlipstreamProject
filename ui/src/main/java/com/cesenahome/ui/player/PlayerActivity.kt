@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.R
@@ -98,7 +99,11 @@ class PlayerActivity : AppCompatActivity() {
         updateAlbumInfo(album, albumId)
         updateArtistInfo(artist, artistId)
         artworkUrl?.let {
-            Glide.with(this).load(it.toUri()).into(binding.artworkImageView)
+            Glide.with(this)
+                .load(it.toUri())
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .into(binding.artworkImageView)
         }
         binding.totalDurationTextView.text = formatDuration(durationMs)
         binding.seekBar.max = durationMs.toInt()
@@ -287,6 +292,8 @@ class PlayerActivity : AppCompatActivity() {
             )
             Glide.with(this@PlayerActivity)
                 .load(mediaMetadata.artworkUri)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
                 .into(binding.artworkImageView)
             currentSongId = mediaController?.currentMediaItem?.mediaId
             updateQueueDialog()
@@ -341,6 +348,8 @@ class PlayerActivity : AppCompatActivity() {
                 updateArtistInfo(metadata.artist, metadata.extras?.getString(MEDIA_METADATA_KEY_ARTIST_ID))
                 Glide.with(this@PlayerActivity)
                     .load(metadata.artworkUri)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
                     .into(binding.artworkImageView)
                 binding.totalDurationTextView.text = formatDuration(mediaController?.duration ?: 0)
                 binding.seekBar.max = (mediaController?.duration ?: 0).toInt().coerceAtLeast(0)

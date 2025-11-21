@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.ui.R
 import com.cesenahome.ui.databinding.ItemSongBinding
@@ -41,6 +42,8 @@ class SongsAdapter(
         Glide.with(holder.binding.cover)
             .load(item.artworkUrl)
             .centerCrop()
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
+            .skipMemoryCache(true)
             .into(holder.binding.cover)
 
         holder.binding.downloadIndicator.isVisible = item.isDownloaded

@@ -7,7 +7,7 @@ import com.cesenahome.data.remote.session.JellyfinSessionManager
 
 class JellyfinApiClient(
     appContext: Context,
-    clientName: String = "CesenaHome",
+    clientName: String = "Slipstream",
     clientVersion: String = "0.1.0",
 ) {
     private val clientFactory = JellyfinClientFactory(

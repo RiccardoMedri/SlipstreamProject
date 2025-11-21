@@ -7,6 +7,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.cesenahome.domain.models.playlist.Playlist
 import com.cesenahome.ui.databinding.ItemPlaylistBinding
 import java.util.concurrent.TimeUnit
@@ -37,6 +38,8 @@ class PlaylistAdapter(
             Glide.with(cover)
                 .load(playlist.artworkUrl)
                 .centerCrop()
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
                 .into(cover)
             downloadIndicator.isVisible = playlist.isDownloaded
         }

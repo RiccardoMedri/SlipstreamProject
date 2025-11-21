@@ -437,20 +437,20 @@ class SongsActivity : AppCompatActivity() {
 
     private fun launchPlayerActivity(command: SongsViewModel.Command.PlaySong) {
         val queueSongs = ArrayList(command.queueSongs)
-        val intent = Intent(this@SongsActivity, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ID, command.song.id)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, command.song.title)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, command.song.artist)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, command.song.artistId)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, command.song.album)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, command.song.albumId)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, command.song.artworkUrl)
-            putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, command.song.durationMs ?: 0L)
-            if (queueSongs.isNotEmpty()) {
-                putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
-                putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, command.selectedIndex)
-            }
-            startActivity(intent)
+        val intent = Intent(this@SongsActivity, PlayerActivity::class.java)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_ID, command.song.id)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, command.song.title)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, command.song.artist)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, command.song.artistId)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, command.song.album)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, command.song.albumId)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, command.song.artworkUrl)
+        intent.putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, command.song.durationMs ?: 0L)
+        if (queueSongs.isNotEmpty()) {
+            intent.putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
+            intent.putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, command.selectedIndex)
         }
+
+        startActivity(intent)
     }
 }
