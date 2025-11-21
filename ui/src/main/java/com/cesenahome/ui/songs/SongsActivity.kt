@@ -24,7 +24,6 @@ import androidx.paging.PagingData
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.cesenahome.domain.di.UseCaseProvider
-import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.domain.models.song.Song
 import com.cesenahome.domain.models.song.SongSortField
 import com.cesenahome.domain.models.misc.SortDirection
@@ -36,10 +35,7 @@ import com.cesenahome.ui.databinding.ActivitySongsBinding
 import com.cesenahome.ui.player.PlayerActivity
 import com.cesenahome.ui.player.player_config.PlayerActivityExtras
 import com.cesenahome.ui.player.PlayerService
-import com.cesenahome.ui.player.PlayerServiceConfig.RANDOM_QUEUE_ATTEMPT_MULTIPLIER
-import com.cesenahome.ui.player.PlayerServiceConfig.RANDOM_QUEUE_TARGET_SIZE
 import com.cesenahome.ui.player.toMediaItem
-import com.cesenahome.ui.player.toQueueSong
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -54,7 +50,6 @@ class SongsActivity : AppCompatActivity() {
     private val mediaController: MediaController?
         get() = mediaControllerFuture?.takeIf { it.isDone }?.get()
     private var downloadMenuItem: MenuItem? = null
-    private val getRandomSongUseCase by lazy { UseCaseProvider.getRandomSongUseCase }
     private val albumId: String? by lazy {
         intent.getStringExtra(EXTRA_ALBUM_ID)
     }
@@ -75,10 +70,12 @@ class SongsActivity : AppCompatActivity() {
             UseCaseProvider.observeDownloadedAlbumIdsUseCase,
             UseCaseProvider.observeDownloadedPlaylistIdsUseCase,
             UseCaseProvider.toggleCollectionDownloadUseCase,
+            UseCaseProvider.getRandomSongUseCase,
             albumId,
             playlistId
         )
     }
+
     companion object {
         const val EXTRA_ALBUM_ID = "extra_album_id"
         const val EXTRA_ALBUM_TITLE = "extra_album_title"
@@ -91,7 +88,8 @@ class SongsActivity : AppCompatActivity() {
         binding = ActivitySongsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val initialFabBottomMargin = (binding.nowPlayingFab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        val initialFabBottomMargin =
+            (binding.nowPlayingFab.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
         applySystemBarsInsets(binding.root) { insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             binding.nowPlayingFab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
@@ -111,7 +109,8 @@ class SongsActivity : AppCompatActivity() {
             onBackPressedDispatcher.onBackPressed()
         }
         playlistName?.takeIf { it.isNotBlank() }?.let { binding.toolbar.title = it }
-        albumTitle?.takeIf { it.isNotBlank() && playlistName.isNullOrBlank() }?.let { binding.toolbar.title = it }
+        albumTitle?.takeIf { it.isNotBlank() && playlistName.isNullOrBlank() }
+            ?.let { binding.toolbar.title = it }
         if (albumId == null && playlistId == null) {
             binding.songToolbarFilters.root.isVisible = true
             binding.toolbar.setupSearchMenu(
@@ -143,7 +142,12 @@ class SongsActivity : AppCompatActivity() {
 
     private fun setupList() {
         adapter = SongsAdapter(
-            onSongClick = { song -> viewModel.onSongClicked(song) },
+            onSongClick = { song ->
+                viewModel.onSongClicked(
+                    song,
+                    adapter.snapshot().items.toList()
+                )
+            },
             onSongOptionsClick = { song, anchor -> showSongOptionsMenu(song, anchor) },
             onFavouriteClick = { song -> viewModel.onFavouriteClick(song) }
         )
@@ -184,9 +188,11 @@ class SongsActivity : AppCompatActivity() {
                     }
                 }
                 launch {
-                    viewModel.playCommands.collect { cmd ->
-                        when (cmd) {
-                            is SongsViewModel.PlayCommand.PlaySong -> launchPlayerActivity(cmd.song)
+                    viewModel.commands.collect { command ->
+                        when (command) {
+                            is SongsViewModel.Command.PlaySong -> launchPlayerActivity(command)
+                            is SongsViewModel.Command.AddSongToQueue -> addSongToQueue(command.song)
+                            is SongsViewModel.Command.PlaySongNext -> playSongNext(command.song)
                         }
                     }
                 }
@@ -215,8 +221,10 @@ class SongsActivity : AppCompatActivity() {
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
+
                             is SongsViewModel.DownloadEvent.Failure -> {
-                                val detail = event.reason?.takeIf { it.isNotBlank() } ?: getString(R.string.unknown)
+                                val detail = event.reason?.takeIf { it.isNotBlank() }
+                                    ?: getString(R.string.unknown)
                                 Toast.makeText(
                                     this@SongsActivity,
                                     getString(R.string.download_failed, detail),
@@ -241,6 +249,7 @@ class SongsActivity : AppCompatActivity() {
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
+
                             is SongsViewModel.FavouriteEvent.Failure -> {
                                 val baseMessageRes = if (event.isFavourite) {
                                     R.string.song_favourite_add_failure
@@ -249,8 +258,10 @@ class SongsActivity : AppCompatActivity() {
                                 }
                                 val baseMessage = getString(baseMessageRes)
                                 val detail = event.reason?.takeIf { it.isNotBlank() }
-                                val finalMessage = detail?.let { "$baseMessage: $it" } ?: baseMessage
-                                Toast.makeText(this@SongsActivity, finalMessage, Toast.LENGTH_SHORT).show()
+                                val finalMessage =
+                                    detail?.let { "$baseMessage: $it" } ?: baseMessage
+                                Toast.makeText(this@SongsActivity, finalMessage, Toast.LENGTH_SHORT)
+                                    .show()
                             }
                         }
                     }
@@ -281,16 +292,21 @@ class SongsActivity : AppCompatActivity() {
             SortDirection.ASCENDING -> R.string.sort_order_ascending
             SortDirection.DESCENDING -> R.string.sort_order_descending
         }
-        binding.songToolbarFilters.buttonSortField.text = getString(R.string.sort_field_label, getString(sortLabelRes))
-        binding.songToolbarFilters.buttonSortOrder.text = getString(R.string.sort_order_label, getString(orderLabelRes))
-        binding.songToolbarFilters.buttonSortField.contentDescription = binding.songToolbarFilters.buttonSortField.text
-        binding.songToolbarFilters.buttonSortOrder.contentDescription = binding.songToolbarFilters.buttonSortOrder.text
+        binding.songToolbarFilters.buttonSortField.text =
+            getString(R.string.sort_field_label, getString(sortLabelRes))
+        binding.songToolbarFilters.buttonSortOrder.text =
+            getString(R.string.sort_order_label, getString(orderLabelRes))
+        binding.songToolbarFilters.buttonSortField.contentDescription =
+            binding.songToolbarFilters.buttonSortField.text
+        binding.songToolbarFilters.buttonSortOrder.contentDescription =
+            binding.songToolbarFilters.buttonSortOrder.text
     }
 
     private fun updateDownloadMenu(state: SongsViewModel.CollectionDownloadState?) {
-        val item = downloadMenuItem ?: binding.toolbar.menu.findItem(R.id.action_toggle_download)?.also {
-            downloadMenuItem = it
-        }
+        val item =
+            downloadMenuItem ?: binding.toolbar.menu.findItem(R.id.action_toggle_download)?.also {
+                downloadMenuItem = it
+            }
         if (state == null) {
             item?.isVisible = false
             return
@@ -313,8 +329,11 @@ class SongsActivity : AppCompatActivity() {
         popup.menuInflater.inflate(R.menu.menu_song_sort_field, popup.menu)
         when (viewModel.sortState.value.field) {
             SongSortField.NAME -> popup.menu.findItem(R.id.sort_by_name)?.isChecked = true
-            SongSortField.ALBUM_ARTIST -> popup.menu.findItem(R.id.sort_by_album_artist)?.isChecked = true
-            SongSortField.DATE_ADDED -> popup.menu.findItem(R.id.sort_by_date_added)?.isChecked = true
+            SongSortField.ALBUM_ARTIST -> popup.menu.findItem(R.id.sort_by_album_artist)?.isChecked =
+                true
+
+            SongSortField.DATE_ADDED -> popup.menu.findItem(R.id.sort_by_date_added)?.isChecked =
+                true
         }
         popup.setOnMenuItemClickListener { item ->
             val selected = when (item.itemId) {
@@ -364,13 +383,15 @@ class SongsActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_add_to_queue -> {
-                    addSongToQueue(song)
+                    viewModel.onAddToQueueRequested(song)
                     true
                 }
+
                 R.id.action_play_next -> {
-                    playSongNext(song)
+                    viewModel.onPlayNextRequested(song)
                     true
                 }
+
                 else -> false
             }
         }
@@ -406,73 +427,30 @@ class SongsActivity : AppCompatActivity() {
             controller.prepare()
             controller.play()
         } else {
-            val currentIndex = controller.currentMediaItemIndex.takeIf { it >= 0 } ?: (controller.mediaItemCount - 1)
+            val currentIndex = controller.currentMediaItemIndex.takeIf { it >= 0 }
+                ?: (controller.mediaItemCount - 1)
             val insertIndex = (currentIndex + 1).coerceAtMost(controller.mediaItemCount)
             controller.addMediaItem(insertIndex, mediaItem)
         }
         Toast.makeText(this, R.string.queue_song_added_next, Toast.LENGTH_SHORT).show()
     }
 
-    private fun launchPlayerActivity(song: Song) {
-        lifecycleScope.launch {
-            val queueSongs = ArrayList(buildQueueSongs(song))
-            val selectedIndex = queueSongs.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
-            val intent = Intent(this@SongsActivity, PlayerActivity::class.java).apply {
-                putExtra(PlayerActivityExtras.EXTRA_SONG_ID, song.id)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, song.title)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, song.artist)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, song.artistId)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, song.album)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, song.albumId)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, song.artworkUrl)
-                putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, song.durationMs ?: 0L)
-                if (queueSongs.isNotEmpty()) {
-                    putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
-                    putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, selectedIndex)
-                }
+    private fun launchPlayerActivity(command: SongsViewModel.Command.PlaySong) {
+        val queueSongs = ArrayList(command.queueSongs)
+        val intent = Intent(this@SongsActivity, PlayerActivity::class.java).apply {
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ID, command.song.id)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_TITLE, command.song.title)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST, command.song.artist)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTIST_ID, command.song.artistId)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM, command.song.album)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ALBUM_ID, command.song.albumId)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_ARTWORK_URL, command.song.artworkUrl)
+            putExtra(PlayerActivityExtras.EXTRA_SONG_DURATION_MS, command.song.durationMs ?: 0L)
+            if (queueSongs.isNotEmpty()) {
+                putParcelableArrayListExtra(PlayerActivityExtras.EXTRA_QUEUE_SONGS, queueSongs)
+                putExtra(PlayerActivityExtras.EXTRA_QUEUE_SELECTED_INDEX, command.selectedIndex)
             }
             startActivity(intent)
         }
-    }
-
-    private suspend fun buildQueueSongs(selectedSong: Song): List<QueueSong> {
-        val snapshotSongs = adapter.snapshot().items
-        val queueSongs = ArrayList<QueueSong>(snapshotSongs.size)
-        val existingIds = mutableSetOf<String>()
-        snapshotSongs.forEach { snapshotSong ->
-            queueSongs += snapshotSong.toQueueSong().also { existingIds += it.id }
-        }
-        if (existingIds.add(selectedSong.id) && queueSongs.none { it.id == selectedSong.id }) {
-            queueSongs.add(selectedSong.toQueueSong())
-        }
-
-        if (shouldAppendRandomSongs(queueSongs.size)) {
-            queueSongs += fetchRandomQueueSongs(existingIds, RANDOM_QUEUE_TARGET_SIZE - queueSongs.size)
-        }
-
-        return queueSongs
-    }
-
-    private fun shouldAppendRandomSongs(currentQueueSize: Int): Boolean {
-        val isInAllSongsView = albumId == null && playlistId == null
-        val isSearching = viewModel.searchQuery.value.isNotBlank()
-        return isInAllSongsView && isSearching && currentQueueSize < RANDOM_QUEUE_TARGET_SIZE
-    }
-
-    private suspend fun fetchRandomQueueSongs(
-        existingIds: MutableSet<String>,
-        required: Int,
-    ): List<QueueSong> {
-        if (required <= 0) return emptyList()
-        val randomSongs = ArrayList<QueueSong>(required)
-        var attempts = 0
-        val maxAttempts = required * RANDOM_QUEUE_ATTEMPT_MULTIPLIER
-        while (randomSongs.size < required && attempts < maxAttempts) {
-            attempts++
-            val song = getRandomSongUseCase().getOrNull() ?: continue
-            if (!existingIds.add(song.id)) continue
-            randomSongs += song.toQueueSong()
-        }
-        return randomSongs
     }
 }

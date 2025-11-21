@@ -12,6 +12,7 @@ import com.cesenahome.domain.models.homepage.HomeDestination
 import com.cesenahome.ui.R
 import com.cesenahome.ui.common.NowPlayingFabController
 import com.cesenahome.ui.databinding.ActivityHomepageBinding
+import com.cesenahome.ui.login.LoginActivity
 import com.cesenahome.ui.album.AlbumActivity
 import com.cesenahome.ui.artist.ArtistActivity
 import com.cesenahome.ui.songs.SongsActivity
@@ -28,6 +29,7 @@ class HomepageActivity : AppCompatActivity() {
             getHomepageMenuUseCase = UseCaseProvider.getHomepageMenuUseCase,
             getLibraryCountsUseCase = UseCaseProvider.getLibraryCountsUseCase,
             ensureFavouritePlaylistUseCase = UseCaseProvider.ensureFavouritePlaylistUseCase,
+            logoutUseCase = UseCaseProvider.logoutUseCase,
         )
     }
 
@@ -46,6 +48,7 @@ class HomepageActivity : AppCompatActivity() {
         binding.btnAlbums.setOnClickListener { onDestination(HomeDestination.ALBUMS) }
         binding.btnPlaylists.setOnClickListener { onDestination(HomeDestination.PLAYLISTS) }
         binding.btnSongs.setOnClickListener { onDestination(HomeDestination.SONGS) }
+        binding.btnLogout.setOnClickListener { viewModel.logout() }
     }
 
     private fun observeVm() {
@@ -55,10 +58,17 @@ class HomepageActivity : AppCompatActivity() {
                     viewModel.menu.collect { items ->
                         items.forEach { item ->
                             when (item.destination) {
-                                HomeDestination.ARTISTS -> binding.btnArtistsTitle.text = labelWithCount(getString(R.string.title_artists), item.count)
-                                HomeDestination.ALBUMS -> binding.btnAlbumsTitle.text = labelWithCount(getString(R.string.title_albums), item.count)
-                                HomeDestination.PLAYLISTS -> binding.btnPlaylistsTitle.text = labelWithCount(getString(R.string.title_playlists), item.count)
-                                HomeDestination.SONGS -> binding.btnSongsTitle.text = labelWithCount(getString(R.string.title_songs), item.count)
+                                HomeDestination.ARTISTS -> binding.btnArtistsTitle.text =
+                                    labelWithCount(getString(R.string.title_artists), item.count)
+
+                                HomeDestination.ALBUMS -> binding.btnAlbumsTitle.text =
+                                    labelWithCount(getString(R.string.title_albums), item.count)
+
+                                HomeDestination.PLAYLISTS -> binding.btnPlaylistsTitle.text =
+                                    labelWithCount(getString(R.string.title_playlists), item.count)
+
+                                HomeDestination.SONGS -> binding.btnSongsTitle.text =
+                                    labelWithCount(getString(R.string.title_songs), item.count)
                             }
                         }
                     }
@@ -66,6 +76,11 @@ class HomepageActivity : AppCompatActivity() {
                 launch {
                     viewModel.isLoadingCounts.collect { loading ->
                         binding.progressCounts.visibility = if (loading) View.VISIBLE else View.GONE
+                    }
+                }
+                launch {
+                    viewModel.logoutEvents.collect {
+                        navigateToLogin()
                     }
                 }
             }
@@ -78,10 +93,19 @@ class HomepageActivity : AppCompatActivity() {
 
     private fun onDestination(dest: HomeDestination) {
         when (dest) {
-            HomeDestination.ARTISTS   -> startActivity(Intent(this, ArtistActivity::class.java))
-            HomeDestination.ALBUMS    -> startActivity(Intent(this, AlbumActivity::class.java))
+            HomeDestination.ARTISTS -> startActivity(Intent(this, ArtistActivity::class.java))
+            HomeDestination.ALBUMS -> startActivity(Intent(this, AlbumActivity::class.java))
             HomeDestination.PLAYLISTS -> startActivity(Intent(this, PlaylistActivity::class.java))
-            HomeDestination.SONGS     -> startActivity(Intent(this, SongsActivity::class.java))
+            HomeDestination.SONGS -> startActivity(Intent(this, SongsActivity::class.java))
         }
+    }
+
+    private fun navigateToLogin() {
+        val intent = Intent(this@HomepageActivity, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(LoginActivity.EXTRA_CLEAR_LOGIN_STATE, true)
+        }
+        startActivity(intent)
+        finish()
     }
 }

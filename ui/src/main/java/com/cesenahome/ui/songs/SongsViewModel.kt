@@ -1,5 +1,6 @@
 package com.cesenahome.ui.songs
 
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -10,6 +11,7 @@ import com.cesenahome.domain.models.song.SongPagingRequest
 import com.cesenahome.domain.models.song.SongSortField
 import com.cesenahome.domain.models.song.SongSortOption
 import com.cesenahome.domain.models.misc.SortDirection
+import com.cesenahome.domain.models.song.QueueSong
 import com.cesenahome.domain.usecases.favourites.AddSongToFavouritesUseCase
 import com.cesenahome.domain.usecases.libraries.GetPagedSongsUseCase
 import com.cesenahome.domain.models.misc.DownloadCollectionTarget
@@ -17,6 +19,10 @@ import com.cesenahome.domain.usecases.download.ObserveDownloadedAlbumIdsUseCase
 import com.cesenahome.domain.usecases.download.ObserveDownloadedPlaylistIdsUseCase
 import com.cesenahome.domain.usecases.download.ObserveDownloadedSongIdsUseCase
 import com.cesenahome.domain.usecases.ToggleCollectionDownloadUseCase
+import com.cesenahome.domain.usecases.playback.GetRandomSongUseCase
+import com.cesenahome.ui.player.PlayerServiceConfig.RANDOM_QUEUE_ATTEMPT_MULTIPLIER
+import com.cesenahome.ui.player.PlayerServiceConfig.RANDOM_QUEUE_TARGET_SIZE
+import com.cesenahome.ui.player.toQueueSong
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +43,7 @@ class SongsViewModel(
     private val observeDownloadedAlbumIdsUseCase: ObserveDownloadedAlbumIdsUseCase,
     private val observeDownloadedPlaylistIdsUseCase: ObserveDownloadedPlaylistIdsUseCase,
     private val toggleCollectionDownloadUseCase: ToggleCollectionDownloadUseCase,
+    private val getRandomSongUseCase: GetRandomSongUseCase,
     private val albumId: String? = null,
     private val playlistId: String? = null,
 ) : ViewModel() {
@@ -50,8 +57,8 @@ class SongsViewModel(
     private val downloadedAlbumIds = observeDownloadedAlbumIdsUseCase()
     private val downloadedPlaylistIds = observeDownloadedPlaylistIdsUseCase()
     private val downloadOperationInProgress = MutableStateFlow(false)
-    private val _playCommands = MutableSharedFlow<PlayCommand>(extraBufferCapacity = 1)
-    val playCommands: SharedFlow<PlayCommand> = _playCommands
+    private val _commands = MutableSharedFlow<Command>(extraBufferCapacity = 1)
+    val commands: SharedFlow<Command> = _commands
     private val _favouriteEvents = MutableSharedFlow<FavouriteEvent>(extraBufferCapacity = 1)
     val favouriteEvents: SharedFlow<FavouriteEvent> = _favouriteEvents
     private val _downloadEvents = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 1)
@@ -93,8 +100,10 @@ class SongsViewModel(
         }
     }
 
-    sealed interface PlayCommand {
-        data class PlaySong(val song: Song) : PlayCommand
+    sealed interface Command {
+        data class PlaySong(val song: Song, val queueSongs: List<QueueSong>, val selectedIndex: Int) : Command
+        data class AddSongToQueue(val song: Song) : Command
+        data class PlaySongNext(val song: Song) : Command
     }
 
     sealed interface FavouriteEvent {
@@ -121,9 +130,23 @@ class SongsViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    fun onSongClicked(song: Song) {
+    fun onSongClicked(song: Song, visibleSongs: List<Song>) {
         viewModelScope.launch {
-            _playCommands.emit(PlayCommand.PlaySong(song))
+            val queueSongs = buildQueueSongs(visibleSongs, song)
+            val selectedIndex = queueSongs.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
+            _commands.emit(Command.PlaySong(song, queueSongs, selectedIndex))
+        }
+    }
+
+    fun onAddToQueueRequested(song: Song) {
+        viewModelScope.launch {
+            _commands.emit(Command.AddSongToQueue(song))
+        }
+    }
+
+    fun onPlayNextRequested(song: Song) {
+        viewModelScope.launch {
+            _commands.emit(Command.PlaySongNext(song))
         }
     }
 
@@ -212,5 +235,47 @@ class SongsViewModel(
             )
             downloadOperationInProgress.value = false
         }
+    }
+
+    private suspend fun buildQueueSongs(visibleSongs: List<Song>, selectedSong: Song): List<QueueSong> {
+        val queueSongs = ArrayList<QueueSong>(visibleSongs.size + 1)
+        val existingIds = mutableSetOf<String>()
+
+        visibleSongs.forEach { snapshotSong ->
+            queueSongs += snapshotSong.toQueueSong().also { existingIds += it.id }
+        }
+
+        if (existingIds.add(selectedSong.id) && queueSongs.none { it.id == selectedSong.id }) {
+            queueSongs.add(selectedSong.toQueueSong())
+        }
+
+        if (shouldAppendRandomSongs(queueSongs.size)) {
+            queueSongs += fetchRandomQueueSongs(existingIds, RANDOM_QUEUE_TARGET_SIZE - queueSongs.size)
+        }
+
+        return queueSongs
+    }
+
+    private fun shouldAppendRandomSongs(currentQueueSize: Int): Boolean {
+        val isInAllSongsView = albumId == null && playlistId == null
+        val isSearching = searchQueryState.value.isNotBlank()
+        return isInAllSongsView && isSearching && currentQueueSize < RANDOM_QUEUE_TARGET_SIZE
+    }
+
+    private suspend fun fetchRandomQueueSongs(
+        existingIds: MutableSet<String>,
+        required: Int,
+    ): List<QueueSong> {
+        if (required <= 0) return emptyList()
+        val randomSongs = ArrayList<QueueSong>(required)
+        var attempts = 0
+        val maxAttempts = required * RANDOM_QUEUE_ATTEMPT_MULTIPLIER
+        while (randomSongs.size < required && attempts < maxAttempts) {
+            attempts++
+            val song = getRandomSongUseCase().getOrNull() ?: continue
+            if (!existingIds.add(song.id)) continue
+            randomSongs += song.toQueueSong()
+        }
+        return randomSongs
     }
 }

@@ -1,5 +1,6 @@
 package com.cesenahome.ui.player
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -63,6 +64,7 @@ class QueueAdapter(
 
     override fun getItemCount(): Int = items.size
 
+    @SuppressLint("ClickableViewAccessibility")
     inner class VH(val binding: ItemQueueSongBinding) : RecyclerView.ViewHolder(binding.root) {
         private val longPressRunnable = Runnable {
             dragStarter?.invoke(this)

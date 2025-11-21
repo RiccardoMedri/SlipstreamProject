@@ -8,22 +8,27 @@ import com.cesenahome.domain.models.homepage.HomeMenuItem
 import com.cesenahome.domain.usecases.homepage.EnsureFavouritePlaylistUseCase
 import com.cesenahome.domain.usecases.homepage.GetHomepageMenuUseCase
 import com.cesenahome.domain.usecases.homepage.GetLibraryCountsUseCase
+import com.cesenahome.domain.usecases.auth.LogoutUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 
 class HomepageViewModel(
     private val getHomepageMenuUseCase: GetHomepageMenuUseCase,
     private val getLibraryCountsUseCase: GetLibraryCountsUseCase,
     private val ensureFavouritePlaylistUseCase: EnsureFavouritePlaylistUseCase,
+    private val logoutUseCase: LogoutUseCase,
 ) : ViewModel() {
 
     private val _menu = MutableStateFlow<List<HomeMenuItem>>(emptyList())
     private val _isLoadingCounts = MutableStateFlow(false)
+    private val _logoutEvents = MutableSharedFlow<Unit>()
     val menu: StateFlow<List<HomeMenuItem>> = _menu
     val isLoadingCounts: StateFlow<Boolean> = _isLoadingCounts
+    val logoutEvents: SharedFlow<Unit> = _logoutEvents
 
     init {
         viewModelScope.launch { _menu.value = getHomepageMenuUseCase() }
@@ -52,6 +57,13 @@ class HomepageViewModel(
                 }
             }
             _isLoadingCounts.value = false
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            logoutUseCase()
+            _logoutEvents.emit(Unit)
         }
     }
 

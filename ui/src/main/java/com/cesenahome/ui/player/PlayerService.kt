@@ -60,7 +60,6 @@ class PlayerService : MediaLibraryService() {
 
     //These bridge to domain to fetch stream URLs, list pages, and random songs for shuffle
     private val resolveStreamUrlUseCase by lazy { UseCaseProvider.resolveStreamUrlUseCase }
-    private val getSimpleSongsListUseCase by lazy { UseCaseProvider.getSimpleSongsListUseCase }
     private val getRandomSongUseCase by lazy { UseCaseProvider.getRandomSongUseCase }
 
     //Lazily instatiate Media3's offline engine: queues downloads, persists their index/state

@@ -50,6 +50,7 @@
     <string name="sort_order_label">Order: %1$s</string>
 
     <string name="action_search">Search</string>
+    <string name="action_logout">Log out</string>
 
     <string name="search_hint_artists">Search artists</string>
     <string name="search_hint_albums">Search albums or artists</string>

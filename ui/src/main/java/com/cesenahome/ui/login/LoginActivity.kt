@@ -31,6 +31,10 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        if (intent.getBooleanExtra(EXTRA_CLEAR_LOGIN_STATE, false)) {
+            viewModel.logout()
+        }
+
         setupUI()
         observeViewModel()
     }
@@ -89,5 +93,9 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_CLEAR_LOGIN_STATE = "extra_clear_login_state"
     }
 }
