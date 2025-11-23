@@ -33,8 +33,6 @@ import com.cesenahome.domain.usecases.libraries.GetPagedSongsUseCase
 import com.cesenahome.domain.usecases.libraries.GetPagedSongsUseCaseImpl
 import com.cesenahome.domain.usecases.playback.GetRandomSongUseCase
 import com.cesenahome.domain.usecases.playback.GetRandomSongUseCaseImpl
-import com.cesenahome.domain.usecases.playback.GetSimpleSongsListUseCase
-import com.cesenahome.domain.usecases.playback.GetSimpleSongsListUseCaseImpl
 import com.cesenahome.domain.usecases.playback.ResolveStreamUrlUseCase
 import com.cesenahome.domain.usecases.playback.ResolveStreamUrlUseCaseImpl
 
@@ -49,7 +47,6 @@ object UseCaseProvider {
     lateinit var getPagedSongsUseCase: GetPagedSongsUseCase
     lateinit var getPagedPlaylistsUseCase: GetPagedPlaylistsUseCase
     lateinit var resolveStreamUrlUseCase: ResolveStreamUrlUseCase
-    lateinit var getSimpleSongsListUseCase: GetSimpleSongsListUseCase
     lateinit var getPagedAlbumUseCase: GetPagedAlbumUseCase
     lateinit var getPagedArtistsUseCase: GetPagedArtistsUseCase
     lateinit var getRandomSongUseCase: GetRandomSongUseCase
@@ -72,7 +69,6 @@ object UseCaseProvider {
         getPagedSongsUseCase = GetPagedSongsUseCaseImpl(repositoryProvider.songRepository)
         getPagedPlaylistsUseCase = GetPagedPlaylistsUseCaseImpl(repositoryProvider.playlistRepository)
         resolveStreamUrlUseCase = ResolveStreamUrlUseCaseImpl(repositoryProvider.playerRepository)
-        getSimpleSongsListUseCase = GetSimpleSongsListUseCaseImpl(repositoryProvider.songRepository)
         getPagedAlbumUseCase = GetPagedAlbumUseCaseImpl(repositoryProvider.albumRepository)
         getPagedArtistsUseCase = GetPagedArtistsUseCaseImpl(repositoryProvider.artistRepository)
         getRandomSongUseCase = GetRandomSongUseCaseImpl(repositoryProvider.songRepository)
