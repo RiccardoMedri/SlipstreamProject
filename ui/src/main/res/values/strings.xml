@@ -70,7 +70,6 @@
     <string name="cd_shuffle_on">Disable shuffle</string>
 
     <string name="cd_repeat_off">Repeat off</string>
-    <string name="cd_repeat_all">Repeat all tracks</string>
     <string name="cd_repeat_one">Repeat current track</string>
 
     <string name="cd_restart_track">Restart current track</string>

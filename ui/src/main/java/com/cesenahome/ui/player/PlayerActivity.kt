@@ -313,7 +313,11 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         override fun onRepeatModeChanged(repeatMode: Int) {
-            updateRepeatButton(repeatMode)
+            val normalizedMode = normalizeRepeatMode(repeatMode)
+            if (normalizedMode != repeatMode) {
+                mediaController?.repeatMode = normalizedMode
+            }
+            updateRepeatButton(normalizedMode)
             updateQueueDialog()
         }
 
@@ -355,7 +359,7 @@ class PlayerActivity : AppCompatActivity() {
                 binding.seekBar.max = (mediaController?.duration ?: 0).toInt().coerceAtLeast(0)
                 mediaController?.let {
                     updateShuffleButton(it.shuffleModeEnabled)
-                    updateRepeatButton(it.repeatMode)
+                    updateRepeatButton(normalizeRepeatMode(it.repeatMode))
                 }
             }
         } else {
@@ -421,9 +425,8 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun updateRepeatButton(repeatMode: Int) {
-        val (icon, description, alpha) = when (repeatMode) {
-            Player.REPEAT_MODE_ONE -> Triple(R.drawable.ic_repeat_one, R.string.cd_repeat_one, 1f)
-            Player.REPEAT_MODE_ALL -> Triple(R.drawable.ic_repeat, R.string.cd_repeat_all, 1f)
+        val (icon, description, alpha) = when (normalizeRepeatMode(repeatMode)) {
+            Player.REPEAT_MODE_ONE -> Triple(R.drawable.ic_repeat, R.string.cd_repeat_one, 1f)
             else -> Triple(R.drawable.ic_repeat, R.string.cd_repeat_off, BUTTON_DISABLED_ALPHA)
         }
         binding.repeatButton.setImageResource(icon)
@@ -431,9 +434,13 @@ class PlayerActivity : AppCompatActivity() {
         binding.repeatButton.contentDescription = getString(description)
     }
 
-    private fun nextRepeatMode(currentMode: Int): Int = when (currentMode) {
-        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-        Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+    private fun nextRepeatMode(currentMode: Int): Int = when (normalizeRepeatMode(currentMode)) {
+        Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ONE
+        else -> Player.REPEAT_MODE_OFF
+    }
+
+    private fun normalizeRepeatMode(repeatMode: Int): Int = when (repeatMode) {
+        Player.REPEAT_MODE_ONE -> Player.REPEAT_MODE_ONE
         else -> Player.REPEAT_MODE_OFF
     }
 
