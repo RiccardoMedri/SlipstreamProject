@@ -1,7 +1,6 @@
 package com.cesenahome.data.di
 
 import android.content.Context
-import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.offline.DownloadService
 import com.cesenahome.data.remote.JellyfinApiClient
